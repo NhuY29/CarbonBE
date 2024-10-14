@@ -1,0 +1,30 @@
+#spring:
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          google:
+#            client-id: 149456744476-1vkrop0qul50b2envas3vmn9andqv41f.apps.googleusercontent.com
+#            client-secret: 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
+#server:
+#  port: 8080
+#mailServe:
+#  host: smtp.gmail.com
+#  port: 587
+#  email: ny22167@gmail.com
+#  password: ngocy29.
+#  protocol: smtp
+#  isSSL: false
+#  auth: true
+#  enable: true
+#  required: true
+
+mailServe:
+  host: smtp.gmail.com
+  port: 587
+  email: ny22167@gmail.com
+  password: yrai anxj bpss gasx
+  protocol: smtp
+  auth: true
+  starttls.enable: true
+  ssl.enable: false
