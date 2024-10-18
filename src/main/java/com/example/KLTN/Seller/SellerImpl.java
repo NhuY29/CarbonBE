@@ -31,9 +31,8 @@ public class SellerImpl implements SellerService{
         Optional<SellerEntity> sellerEntityOptional = sellerRepository.findByUser_UserId(userId);
         return sellerEntityOptional.map(sellerEntity -> {
             SellerDTO sellerDTO = new SellerDTO();
-            // Chuyển đổi từ SellerEntity sang SellerDTO
-            sellerDTO.setSellerId(sellerEntity.getSellerId()); // Sử dụng đúng tên trường
-            sellerDTO.setUserId(sellerEntity.getUser().getUserId()); // Lấy userId từ UserEntity
+            sellerDTO.setSellerId(sellerEntity.getSellerId());
+            sellerDTO.setUserId(sellerEntity.getUser().getUserId());
             sellerDTO.setCompanyName(sellerEntity.getCompanyName());
             sellerDTO.setContactPerson(sellerEntity.getContactPerson());
             sellerDTO.setContactEmail(sellerEntity.getContactEmail());

@@ -20,10 +20,10 @@ import java.util.UUID;
 public class UserController {
     @Autowired
     private UserService userService;
-@PostMapping("/register")
-public ResponseDTO createUser(@RequestBody RegisterRequest registrationDTO) {
-    return userService.createUser(registrationDTO.getUserDTO(), registrationDTO.getBuyerDTO(), registrationDTO.getSellerDTO());
-}
+    @PostMapping("/register")
+    public ResponseDTO createUser(@RequestBody RegisterRequest registrationDTO) {
+        return userService.createUser(registrationDTO.getUserDTO(), registrationDTO.getBuyerDTO(), registrationDTO.getSellerDTO());
+    }
 
     @GetMapping("/getAll")
     public List<UserDTO> getAllUsers() {
@@ -59,13 +59,13 @@ public ResponseDTO createUser(@RequestBody RegisterRequest registrationDTO) {
         }
     }
     @GetMapping("/pagination")
-    public Page<UserEntity> getAll(
+    public Page<UserDTO> getAll(
             @RequestParam(defaultValue = "1") Integer pageNo,
             @RequestParam(defaultValue = "2") Integer pageSize) {
         return userService.getAll(pageNo, pageSize);
     }
     @GetMapping("/pagination2")
-    public Page<UserEntity> searchUsers(
+    public Page<UserDTO> searchUsers(
             @RequestParam String term,
             @RequestParam int page,
             @RequestParam int size) {
@@ -73,10 +73,8 @@ public ResponseDTO createUser(@RequestBody RegisterRequest registrationDTO) {
     }
     @GetMapping("/getusername")
     public String getUsernameFromToken(@RequestHeader("Authorization") String token) {
-        // Gọi service để lấy username từ token
         String username = userService.getUsernameByToken(token);
 
-        // Trả về username hoặc thông báo lỗi nếu không lấy được
         if (username != null) {
             return  username;
         } else {

@@ -27,7 +27,7 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(request -> request
                 .requestMatchers(HttpMethod.POST, "/user/register", "/auth/**","/wallets/create-wallet","/client/sendmail","/wallet/airdrop","/wallet/transfer","/project/create").permitAll()
                 .requestMatchers(HttpMethod.GET, "/user/gmail","/wallet/info","/wallet/transactions","/user/getusername","/project/list","/common-categories").permitAll()
-                .requestMatchers(HttpMethod.PUT, "/user/**/status","/common-categories/**").permitAll()
+                .requestMatchers(HttpMethod.PUT, "/user/**/status","/common-categories/**","/measurementData/update/**").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/user/pagination/**","/common-categories/**","/commonParentChild/**").permitAll()
                 .requestMatchers(HttpMethod.DELETE, "/user/delete/**","/project/delete/**").permitAll()
                 .anyRequest().authenticated());
@@ -56,7 +56,7 @@ public class SecurityConfig {
         return (web) -> {
             web.ignoring().requestMatchers(HttpMethod.GET, "/user/gmail","/user/getAll","/user/getAll2","/user/getEmail/**","/user/pagination/**","/user/pagination2","/wallets/get/**","/project/download/**","/image/get-by-url/**");
             web.ignoring().requestMatchers(HttpMethod.POST, "/user/register", "/auth/","/client/sendmail","/seller/create","/buyer/create","/wallet/create","/wallet/airdrop");
-            web.ignoring().requestMatchers(HttpMethod.PUT,"/user/**","/project/update/**","common-categories/**","/commonParentChild/**");
+            web.ignoring().requestMatchers(HttpMethod.PUT,"/user/**","/project/update/**","common-categories/**","/commonParentChild/**","/measurementData/update/**");
             web.ignoring().requestMatchers(HttpMethod.DELETE,"/user/delete/**");
 
         };

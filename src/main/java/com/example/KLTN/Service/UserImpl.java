@@ -13,6 +13,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -29,6 +30,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Service
 public class UserImpl implements UserService {
@@ -47,66 +49,95 @@ public class UserImpl implements UserService {
     @Autowired
     private CustomJWTDecoder customJWTDecoder;
     private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-@Override
-public ResponseDTO createUser(UserDTO userDTO, BuyerDTO buyerDTO, SellerDTO sellerDTO) {
-    try {
-        if (userDTO.getUsername() == null || userDTO.getUsername().isEmpty()) {
-            throw new IllegalArgumentException("Username không thể là null hoặc rỗng");
-        }
-
-        UserEntity userEntity = new UserEntity();
-        userEntity.setUsername(userDTO.getUsername());
-        userEntity.setPassword(passwordEncoder.encode(Optional.ofNullable(userDTO.getPassword()).orElse("default_password")));
-        userEntity.setFirstname(userDTO.getFirstname());
-        userEntity.setLastname(userDTO.getLastname());
-        userEntity.setRoles(userDTO.getRoles());
-        userEntity.setStatus(false);
-        userEntity = userRepository.save(userEntity);
-        logger.info("User saved: " + userEntity.getUsername());
-
-        // Xử lý các vai trò
-        if (userDTO.getRoles().contains("ROLE_ADMIN")) {
-            // Không cần BuyerDTO hoặc SellerDTO cho ROLE_ADMIN
-        } else if (userDTO.getRoles().contains("ROLE_BUYER")) {
-            if (buyerDTO != null) {
-                buyerDTO.setUserId(userEntity.getUserId());
-                buyerService.createBuyer(buyerDTO);
-            } else {
-                throw new IllegalArgumentException("Thông tin BuyerDTO không được cung cấp cho ROLE_BUYER");
+    @Override
+    public ResponseDTO createUser(UserDTO userDTO, BuyerDTO buyerDTO, SellerDTO sellerDTO) {
+        try {
+            if (userDTO.getUsername() == null || userDTO.getUsername().isEmpty()) {
+                throw new IllegalArgumentException("Username không thể là null hoặc rỗng");
             }
-        } else if (userDTO.getRoles().contains("ROLE_SELLER")) {
-            if (sellerDTO != null) {
-                sellerDTO.setUserId(userEntity.getUserId());
-                sellerService.createSeller(sellerDTO);
-            } else {
-                throw new IllegalArgumentException("Thông tin SellerDTO không được cung cấp cho ROLE_SELLER");
-            }
-        } else {
-            throw new IllegalArgumentException("Vai trò không hợp lệ");
-        }
 
-        return new ResponseDTO(true, "Đăng ký thành công, vui lòng chờ phê duyệt.");
-    } catch (Exception e) {
-        logger.severe("Không thể đăng ký người dùng: " + e.getMessage());
-        return new ResponseDTO(false, "Có lỗi xảy ra khi đăng ký người dùng.");
+            UserEntity userEntity = new UserEntity();
+            userEntity.setUsername(userDTO.getUsername());
+            userEntity.setPassword(passwordEncoder.encode(Optional.ofNullable(userDTO.getPassword()).orElse("default_password")));
+            userEntity.setFirstname(userDTO.getFirstname());
+            userEntity.setLastname(userDTO.getLastname());
+            userEntity.setRoles(userDTO.getRoles());
+            userEntity.setStatus(false);
+            userEntity = userRepository.save(userEntity);
+            logger.info("User saved: " + userEntity.getUsername());
+
+            if (userDTO.getRoles().contains("ROLE_ADMIN")) {
+            } else if (userDTO.getRoles().contains("ROLE_BUYER")) {
+                if (buyerDTO != null) {
+                    buyerDTO.setUserId(userEntity.getUserId());
+                    buyerDTO.setBuyerId(UUID.randomUUID()); // Tự động tạo buyerId
+                    buyerService.createBuyer(buyerDTO);
+                } else {
+                    throw new IllegalArgumentException("Thông tin BuyerDTO không được cung cấp cho ROLE_BUYER");
+                }
+            }
+
+            else if (userDTO.getRoles().contains("ROLE_SELLER")) {
+                if (sellerDTO != null) {
+                    sellerDTO.setUserId(userEntity.getUserId());
+                    sellerService.createSeller(sellerDTO);
+                } else {
+                    throw new IllegalArgumentException("Thông tin SellerDTO không được cung cấp cho ROLE_SELLER");
+                }
+            } else {
+                throw new IllegalArgumentException("Vai trò không hợp lệ");
+            }
+
+            return new ResponseDTO(true, "Đăng ký thành công, vui lòng chờ phê duyệt.");
+        } catch (Exception e) {
+            logger.severe("Không thể đăng ký người dùng: " + e.getMessage());
+            return new ResponseDTO(false, "Có lỗi xảy ra khi đăng ký người dùng.");
+        }
     }
-}
     public UUID getUserIdByUsername(String username) {
         Optional<UserEntity> userOptional = userRepository.findByUsername(username);
         if (userOptional.isPresent()) {
-            return userOptional.get().getUserId(); // Hoặc phương thức phù hợp để lấy UUID
+            return userOptional.get().getUserId();
         }
         return null;
     }
 
-    public Page<UserEntity> getAll(Integer pageNo, Integer pageSize) {
+    public Page<UserDTO> getAll(Integer pageNo, Integer pageSize) {
         Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
-        return userRepository.findByIsDeletedFalseAndStatusTrue(pageable);
+        Page<UserEntity> userEntities = userRepository.findByIsDeletedFalseAndStatusTrue(pageable);
+
+        List<UserDTO> userDTOs = userEntities.getContent().stream()
+                .map(user -> new UserDTO(
+                        user.getUserId(),
+                        user.getUsername(),
+                        user.getPassword(),
+                        user.getFirstname(),
+                        user.getLastname(),
+                        user.getRoles(),
+                        user.isStatus(),
+                        user.isDelete()))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(userDTOs, pageable, userEntities.getTotalElements());
     }
 
-    public Page<UserEntity> searchUsers(String searchTerm, int page, int size) {
-        Pageable pageable = PageRequest.of(page-1, size);
-        return userRepository.searchUsers(searchTerm, pageable);
+    public Page<UserDTO> searchUsers(String searchTerm, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<UserEntity> userEntities = userRepository.searchUsers(searchTerm, pageable);
+
+        List<UserDTO> userDTOs = userEntities.getContent().stream()
+                .map(user -> new UserDTO(
+                        user.getUserId(),
+                        user.getUsername(),
+                        user.getPassword(),
+                        user.getFirstname(),
+                        user.getLastname(),
+                        user.getRoles(),
+                        user.isStatus(),
+                        user.isDelete()))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(userDTOs, pageable, userEntities.getTotalElements());
     }
 
 
@@ -200,7 +231,6 @@ public ResponseDTO createUser(UserDTO userDTO, BuyerDTO buyerDTO, SellerDTO sell
     }
     public String getUsernameByToken(@RequestHeader("Authorization") String token) {
         try {
-            // Tách "Bearer " ra khỏi token
             String jwtToken = token.replace("Bearer ", "").trim();
 
             if (jwtToken.isEmpty()) {
@@ -217,7 +247,6 @@ public ResponseDTO createUser(UserDTO userDTO, BuyerDTO buyerDTO, SellerDTO sell
 
             return username;
         } catch (JwtException e) {
-            // Lỗi khi giải mã token hoặc token không hợp lệ
             System.err.println("Invalid token: " + e.getMessage());
             return "Invalid token: " + e.getMessage();
         } catch (Exception e) {
@@ -243,6 +272,6 @@ public ResponseDTO createUser(UserDTO userDTO, BuyerDTO buyerDTO, SellerDTO sell
     @Override
     public SellerDTO getSellerByUserId(UUID userId) {
         Optional<SellerDTO> sellerOptional = sellerService.findByUserId(userId);
-        return sellerOptional.orElse(null); // Hoặc trả về một giá trị khác nếu không tìm thấy
+        return sellerOptional.orElse(null);
     }
 }

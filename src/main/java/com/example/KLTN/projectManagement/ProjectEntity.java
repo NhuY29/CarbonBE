@@ -3,6 +3,7 @@ package com.example.KLTN.projectManagement;
 import com.example.KLTN.Entity.UserEntity;
 import com.example.KLTN.Enum.Category;
 import com.example.KLTN.MeasurementData.MeasurementDataEntity;
+import com.example.KLTN.signature.signatureEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -63,4 +64,6 @@ public class ProjectEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
+    @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private signatureEntity signature;
 }

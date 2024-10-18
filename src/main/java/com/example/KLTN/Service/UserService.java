@@ -20,8 +20,8 @@ public interface UserService {
     ResponseDTO updateUserStatus(UUID userId, boolean status);
     void sendHtmlMail(MailDTO dataMail,String templateName) throws MessagingException;
     String getUsernameById(UUID id);
-     Page<UserEntity> getAll(Integer pageNo, Integer pageSize);
-    Page<UserEntity> searchUsers(String searchTerm, int page, int size);
+    Page<UserDTO> getAll(Integer pageNo, Integer pageSize);
+    Page<UserDTO> searchUsers(String searchTerm, int page, int size);
     UUID getUserIdByUsername(String username);
     String getUsernameByToken(@RequestHeader("Authorization") String token);
     UUID getUserIdByToken(String token);

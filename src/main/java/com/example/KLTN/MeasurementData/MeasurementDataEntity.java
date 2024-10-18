@@ -36,11 +36,11 @@ public class MeasurementDataEntity {
     private String namelandowner;
 
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)  // Thêm CascadeType.REMOVE
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", referencedColumnName = "project_id", nullable = false)
     private ProjectEntity project;
 
-    // OneToMany relationship with MeasurementDetailsEntity
+
     @OneToMany(mappedBy = "measurementData", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MeasurementDetailsEntity> measurementDetails;
 }

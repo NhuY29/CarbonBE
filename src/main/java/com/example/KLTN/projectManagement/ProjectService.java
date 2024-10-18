@@ -1,6 +1,7 @@
 package com.example.KLTN.projectManagement;
 
 import com.example.KLTN.Entity.UserEntity;
+import com.example.KLTN.Seller.SellerDTO;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -21,4 +22,5 @@ public interface ProjectService {
     List<ImageEntity> getImagesByProjectId(UUID projectId);
     ProjectEntity updateProject(UUID projectId, ProjectRequest projectRequest);
      List<ProjectDTO> getProjectsByUserId(UUID userId) ;
+    SellerDTO getSellerByProjectId(UUID projectId);
 }

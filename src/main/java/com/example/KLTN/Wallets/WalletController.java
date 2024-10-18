@@ -10,9 +10,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("/wallet")
@@ -28,6 +26,23 @@ public class WalletController {
         this.userService = userService;
         this.jwtDecoder = jwtDecoder;
     }
+    @GetMapping("/username/{publicKey}")
+    public ResponseEntity<String> getUsername(@PathVariable String publicKey) {
+        String username = walletService.getUsernameFromPublicKey(publicKey);
+        if (username.startsWith("User not found") || username.startsWith("Wallet not found")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(username);
+        }
+
+        return ResponseEntity.ok(username);
+    }
+
+
+    @PostMapping("/createToken")
+    public String createToken(@RequestParam String senderSecretKeyBase58,
+                              @RequestParam int tokenCount) {
+        return walletService.createToken(senderSecretKeyBase58, tokenCount);
+    }
+
 
     @PostMapping("/create")
     public String createWallet(@RequestHeader("Authorization") String token) {
@@ -69,6 +84,57 @@ public class WalletController {
                     .body("Error getting wallet info: " + e.getMessage());
         }
     }
+    @GetMapping("/secretKey")
+    public ResponseEntity<String> getWalletSecretByOwner(@RequestHeader("Authorization") String token) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Jwt decodedJwt = jwtDecoder.decode(jwtToken);
+            String username = decodedJwt.getSubject();
+
+            UUID userId = userService.getUserIdByUsername(username);
+
+            Optional<SolanaEntity> walletOptional = walletService.findWalletByUserId(userId);
+
+            if (walletOptional.isPresent()) {
+                String secretKey = walletOptional.get().getSecretKey();
+                return ResponseEntity.ok(secretKey);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Wallet not found for user: " + username);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error getting wallet info: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/token")
+    public ResponseEntity<String> getTokenAccountsByOwner(@RequestHeader("Authorization") String token) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Jwt decodedJwt = jwtDecoder.decode(jwtToken);
+            String username = decodedJwt.getSubject();
+
+            UUID userId = userService.getUserIdByUsername(username);
+
+            Optional<SolanaEntity> walletOptional = walletService.findWalletByUserId(userId);
+
+            if (walletOptional.isPresent()) {
+                String publicKey = walletOptional.get().getPublicKey();
+                String transations = walletService.getTokenAccountsByOwner(publicKey);
+                return ResponseEntity.ok(transations);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Public key not found for user: " + username);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error getting wallet info: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/transactions")
     public ResponseEntity<?> getTransactions(@RequestHeader("Authorization") String token) {
         try {
@@ -104,18 +170,26 @@ public class WalletController {
         }
     }
     @PostMapping("/transfer")
-    public ResponseEntity<String> sendTransaction(
+    public ResponseEntity<Map<String, String>> sendTransaction(
             @RequestParam String senderSecretKeyBase58,
             @RequestParam String receiverPublicKey,
             @RequestParam double amount,
             @RequestParam(required = false) String content) {
 
+        Map<String, String> response = new HashMap<>();
+
         try {
             String result = walletService.sendTransaction(senderSecretKeyBase58, receiverPublicKey, amount, content);
-            return ResponseEntity.ok(result);
+
+            response.put("message", "Transaction successful");
+            response.put("transactionId", result);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Transaction failed: " + e.getMessage());
+            response.put("message", "Transaction failed");
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+
 
 }

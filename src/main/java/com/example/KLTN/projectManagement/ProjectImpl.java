@@ -2,6 +2,9 @@ package com.example.KLTN.projectManagement;
 
 
 import com.example.KLTN.Entity.UserEntity;
+import com.example.KLTN.Seller.SellerDTO;
+import com.example.KLTN.Seller.SellerEntity;
+import com.example.KLTN.Seller.SellerReponsitory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -30,7 +33,37 @@ public class ProjectImpl implements ProjectService {
     private ProjectReponsitory projectRepository;
     @Autowired
     private ImageRepository imageRepository;
-    private final String uploadDir = "D:/ThucTapIT5/MyFile/"; // Base directory for file storage
+    @Autowired
+    private SellerReponsitory sellerRepository;
+    private final String uploadDir = "D:/ThucTapIT5/MyFile/";
+    public SellerDTO getSellerByProjectId(UUID projectId) {
+
+        ProjectEntity projectEntity = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project ID not found"));
+
+        UserEntity user = projectEntity.getUser();
+
+
+        SellerEntity seller = sellerRepository.findByUser_UserId(user.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Seller not found for this user"));
+
+
+        return convertToSellerDTO(seller);
+    }
+    private SellerDTO convertToSellerDTO(SellerEntity sellerEntity) {
+        SellerDTO sellerDTO = new SellerDTO();
+
+
+        sellerDTO.setSellerId(sellerEntity.getSellerId());
+        sellerDTO.setUserId(sellerEntity.getUser().getUserId());
+        sellerDTO.setCompanyName(sellerEntity.getCompanyName());
+        sellerDTO.setContactPerson(sellerEntity.getContactPerson());
+        sellerDTO.setContactEmail(sellerEntity.getContactEmail());
+        sellerDTO.setContactPhone(sellerEntity.getContactPhone());
+
+        return sellerDTO;
+    }
+
     @Override
     public ProjectEntity createProject(ProjectRequest projectRequest, UserEntity user) {
         ProjectEntity project = new ProjectEntity();
@@ -45,7 +78,6 @@ public class ProjectImpl implements ProjectService {
         project.setStandard(projectRequest.getStandard());
         project.setField(projectRequest.getField());
         project.setUser(user);
-        // Thêm danh sách các tọa độ
         project.setCoordinates(projectRequest.getCoordinates());
 
         return projectRepository.save(project);
@@ -100,18 +132,15 @@ public class ProjectImpl implements ProjectService {
     }
     public String uploadImage(MultipartFile file) throws IOException {
         try {
-            // Create the directory if it doesn't exist
             File uploadDirectory = new File(uploadDir);
             if (!uploadDirectory.exists()) {
                 uploadDirectory.mkdirs();
             }
 
-            // Save the file with the original file name
             String fileName = file.getOriginalFilename();
             File fileToSave = new File(uploadDir + fileName);
             file.transferTo(fileToSave);
 
-            // Return the file name
             return fileName;
         } catch (IOException e) {
             throw new IOException("Failed to upload file: " + e.getMessage(), e);
@@ -163,7 +192,6 @@ public class ProjectImpl implements ProjectService {
         dto.setStandard(projectEntity.getStandard());
         dto.setField(projectEntity.getField());
 
-        // Chuyển đổi danh sách ảnh
         List<ImageDTO> images = projectEntity.getImages().stream()
                 .map(image -> new ImageDTO(image.getImageId(), image.getUrl()))
                 .collect(Collectors.toList());

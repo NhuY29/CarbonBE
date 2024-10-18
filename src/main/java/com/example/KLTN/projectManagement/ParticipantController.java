@@ -15,19 +15,6 @@ public class ParticipantController {
     @Autowired
     private ParticipantService participantService;
 
-//    @PostMapping("/join")
-//    public ResponseEntity<String> joinProject(
-//            @RequestHeader("Authorization") String token,
-//            @RequestParam("projectId") UUID projectId) {
-//
-//        if (token.startsWith("Bearer ")) {
-//            token = token.substring(7);
-//        }
-//
-//        participantService.joinProject(token, projectId);
-//        return new ResponseEntity<>("Joined project successfully", HttpStatus.OK);
-//    }
-
     @PostMapping("/join")
     public ResponseEntity<Boolean> joinProject(
             @RequestHeader("Authorization") String token,
@@ -65,9 +52,11 @@ public class ParticipantController {
 
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<List<UserEntity>> getParticipantsByProjectId(
+    public ResponseEntity<List<ParticipantDTO>> getParticipantsByProjectId(
             @PathVariable UUID projectId) {
-        List<UserEntity> participants = participantService.getParticipantsByProjectId(projectId);
+        List<ParticipantDTO> participants = participantService.getParticipantsByProjectId(projectId);
         return new ResponseEntity<>(participants, HttpStatus.OK);
     }
+
+
 }

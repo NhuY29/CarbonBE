@@ -17,4 +17,5 @@ public class MeasurementDataDTO {
     private String farmingProcess;
     private String phonelandowner;
     private String namelandowner;
+    private UUID projectId;
 }

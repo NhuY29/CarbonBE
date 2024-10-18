@@ -25,7 +25,7 @@ public class ImageImpl implements ImageService {
     @Autowired
     private ProjectReponsitory projectRepository;
 
-    private final String uploadDir = "D:\\ThucTapIT5\\MyFile\\"; // Base directory for file storage
+    private final String uploadDir = "D:\\ThucTapIT5\\MyFile\\";
 
     @Override
     public ResponseEntity<byte[]> getImageByUrlWithSize(String imageUrl, int width, int height) {

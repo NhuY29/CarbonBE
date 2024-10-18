@@ -31,7 +31,6 @@ public class CommonParentChildImpl implements CommonParentChildService{
             dto.setId(category.getId());
             dto.setName(category.getName());
             dto.setDescription(category.getDescription());
-            // Kiểm tra nếu category có parent thì gán parentId
             dto.setParentId(category.getParent() != null ? category.getParent().getId() : null);
             return dto;
         });

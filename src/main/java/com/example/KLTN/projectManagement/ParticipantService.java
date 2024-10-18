@@ -9,6 +9,6 @@ import java.util.UUID;
 @Service
 public interface ParticipantService {
     boolean joinProject(String token, UUID projectId);
-    List<UserEntity> getParticipantsByProjectId(UUID projectId);
+    List<ParticipantDTO> getParticipantsByProjectId(UUID projectId);
     boolean checkProjectParticipation(String token, UUID projectId);
 }
