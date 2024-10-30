@@ -10,7 +10,7 @@ import java.util.*;
 
 public class Config {
     public static final String vnp_PayUrl = "http://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static final String vnp_Returnurl = "http://localhost:8080/vnpay_jsp/vnpay_return.jsp"; // Đảm bảo biến được khai báo đúng
+    public static final String vnp_Returnurl = "http://localhost:4200/test";
     public static final String vnp_TmnCode = "O6R4A1DJ";
     public static final String secretKey = "8XURI1UA5XD4EMJBN8YPMBCSSWV9PY0M";
 
@@ -76,7 +76,7 @@ public class Config {
         StringBuilder randomNumber = new StringBuilder();
         Random random = new Random();
         for (int i = 0; i < length; i++) {
-            randomNumber.append(random.nextInt(10)); // Chỉ lấy số từ 0 đến 9
+            randomNumber.append(random.nextInt(10));
         }
         return randomNumber.toString();
     }

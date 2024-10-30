@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/user/**/status","/common-categories/**","/measurementData/update/**").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/user/pagination/**","/common-categories/**","/commonParentChild/**").permitAll()
                 .requestMatchers(HttpMethod.DELETE, "/user/delete/**","/project/delete/**").permitAll()
+
                 .anyRequest().authenticated());
 
         httpSecurity.oauth2ResourceServer(oauth2 ->

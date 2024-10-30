@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Result</title>
+    <script>
+        // Function to parse URL parameters
+        function getQueryParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                txnRef: urlParams.get('vnp_TxnRef'),
+                amount: (urlParams.get('vnp_Amount') / 100).toFixed(2), // Chia 100 để lấy số tiền đúng
+                responseCode: urlParams.get('vnp_ResponseCode'),
+                status: urlParams.get('vnp_TransactionStatus'),
+            };
+        }
+
+        // Function to display the result in the HTML
+        function displayPaymentResult() {
+            const params = getQueryParams();
+            document.getElementById('txnRef').textContent = params.txnRef || 'N/A';
+            document.getElementById('amount').textContent = params.amount + ' VND' || 'N/A';
+            document.getElementById('responseCode').textContent = params.responseCode || 'N/A';
+            document.getElementById('status').textContent = params.status === '00' ? 'Success' : 'Failed';
+        }
+
+        // Execute when the page is fully loaded
+        window.addEventListener('load', displayPaymentResult);
+    </script>
+</head>
+
+<body>
+<h1>Payment Status</h1>
+<p>Transaction Reference: <span id="txnRef"></span></p>
+<p>Amount: <span id="amount"></span></p>
+<p>Response Code: <span id="responseCode"></span></p>
+<p>Transaction Status: <span id="status"></span></p>
+</body>
+
+</html>

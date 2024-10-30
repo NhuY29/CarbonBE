@@ -99,12 +99,26 @@ public class WalletService {
 
             String outputString = output.toString().trim();
             logger.info("Output from Node.js script: {}", outputString);
-            return outputString;
+
+            String mintToken = extractMintToken(outputString);
+            return mintToken;
+
         } catch (Exception e) {
             logger.error("Error creating token: ", e);
             return "Error creating token: " + e.getMessage();
         }
     }
+
+    private String extractMintToken(String output) {
+        String[] lines = output.split("\n");
+        for (String line : lines) {
+            if (line.startsWith("Mint token đã tạo: ")) {
+                return line.substring("Mint token đã tạo: ".length()).trim();
+            }
+        }
+        return "Không tìm thấy mint token.";
+    }
+
 
     public String getTokenAccountsByOwner(String publicKey) {
         try {

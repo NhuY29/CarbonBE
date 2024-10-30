@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface CommonCategoryRepository extends JpaRepository<CommonCategoryEntity, UUID> {
@@ -21,4 +22,5 @@ public interface CommonCategoryRepository extends JpaRepository<CommonCategoryEn
             "(:category IS NULL OR LOWER(c.category) LIKE LOWER(CONCAT('%', :category, '%')))")
     List<CommonCategoryEntity> searchByNameAndCategory(@Param("name") String name,
                                                        @Param("category") String category);
+    Optional<CommonCategoryEntity> findById(UUID id);
 }
