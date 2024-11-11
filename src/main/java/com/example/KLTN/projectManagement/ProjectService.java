@@ -23,4 +23,5 @@ public interface ProjectService {
     ProjectEntity updateProject(UUID projectId, ProjectRequest projectRequest);
      List<ProjectDTO> getProjectsByUserId(UUID userId) ;
     SellerDTO getSellerByProjectId(UUID projectId);
+    List<CoordinateDTO> getCoordinatesByProjectId(UUID projectId);
 }

@@ -60,6 +60,173 @@ public class WalletService {
         String message = "Số dư hoặc lịch sử giao dịch của bạn đã thay đổi.";
         webSocketController.sendNotification(publicKey, message);
     }
+    public SolanaEntity getWalletByUserId(UUID userId) {
+        return walletRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new RuntimeException("Wallet not found for userId: " + userId));
+    }
+    public String getTransactionHistory2(String tokenAddress) {
+        try {
+            String jsonInputString = String.format(
+                    "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"getConfirmedSignaturesForAddress2\", \"params\": [\"%s\", {\"limit\": 10   }]}",
+                    tokenAddress
+            );
+
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8899"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonInputString))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                JSONObject jsonResponse = new JSONObject(response.body());
+                JSONArray result = jsonResponse.getJSONArray("result");
+                JSONArray transactionsArray = new JSONArray();
+
+                for (int i = 0; i < result.length(); i++) {
+                    JSONObject transaction = result.getJSONObject(i);
+                    String signature = transaction.getString("signature");
+                    long slot = transaction.getLong("slot");
+                    long blockTime = transaction.optLong("blockTime", 0);
+
+
+                    String resultStatus = transaction.opt("err") != null ? "Failed" : "Success";
+
+
+                    String timestamp = blockTime > 0 ? new java.util.Date(blockTime * 1000).toString() : "Unknown time";
+                    String age = calculateAge(blockTime);
+
+
+                    JSONObject transactionDetails = new JSONObject();
+                    transactionDetails.put("signature", signature);
+                    transactionDetails.put("block", slot);
+                    transactionDetails.put("age", age);
+                    transactionDetails.put("timestamp", timestamp);
+                    transactionDetails.put("result", resultStatus);
+
+                    transactionsArray.put(transactionDetails);
+                }
+
+                JSONObject resultJson = new JSONObject();
+                resultJson.put("transactions", transactionsArray);
+
+
+                checkAndNotifyChange(tokenAddress);
+
+                return resultJson.toString();
+            } else {
+                return String.format("{\"error\": \"Error from Solana RPC: HTTP %d - %s\"}",
+                        response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "{\"error\": \"Error getting transaction history: " + e.getMessage() + "\"}";
+        }
+    }
+
+
+    public String getTokenBalance(String mintAddressBase58, String tokenAccountAddressBase58) {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "node",
+                    "D:\\wallet_solana\\tokenBalance.js",
+                    mintAddressBase58,
+                    tokenAccountAddressBase58
+            );
+
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                // Lọc bỏ thông báo không cần thiết
+                if (!line.contains("bigint: Failed to load bindings")) {
+                    output.append(line).append("\n");
+                }
+            }
+
+            process.waitFor();
+
+            // Tạo JSON response
+            JSONObject jsonResponse = new JSONObject();
+            String balance = "0"; // Khởi tạo số dư mặc định
+
+            // Phân tích đầu ra để lấy số dư
+            String outputString = output.toString().trim();
+            if (!outputString.isEmpty()) {
+                // Giả định đầu ra có định dạng như sau: "Số dư token: 50000000000"
+                String[] lines = outputString.split("\n");
+                for (String outputLine : lines) {
+                    if (outputLine.startsWith("Số dư token: ")) {
+                        balance = outputLine.replace("Số dư token: ", "").trim();
+                        break; // Kết thúc vòng lặp khi đã tìm thấy số dư
+                    }
+                }
+            }
+
+            jsonResponse.put("balance", balance);
+            jsonResponse.put("message", "Lấy số dư thành công.");
+            return jsonResponse.toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JSONObject jsonResponse = new JSONObject();
+            jsonResponse.put("balance", "0");
+            jsonResponse.put("message", "Lỗi khi gọi script Node.js: " + e.getMessage());
+            return jsonResponse.toString();
+        }
+    }
+
+
+
+    public String transferToken(String senderSecretKeyBase58, String toAddressBase58, String mintAddressBase58, int amount, double solAmount, String receiverSecretKeyBase58) {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "node",
+                    "D:\\wallet_solana\\token_transfer.js",
+                    senderSecretKeyBase58,
+                    toAddressBase58,
+                    mintAddressBase58,
+                    String.valueOf(amount),
+                    String.valueOf(solAmount),
+                    receiverSecretKeyBase58
+            );
+            processBuilder.redirectErrorStream(true);
+
+            Process process = processBuilder.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+
+            // Đọc từng dòng đầu ra và lọc bỏ dòng không mong muốn
+            while ((line = reader.readLine()) != null) {
+                if (!line.contains("bigint: Failed to load bindings")) { // Lọc bỏ dòng thông báo bigint
+                    output.append(line).append("\n");
+                }
+            }
+
+            process.waitFor();
+
+            String outputString = output.toString().trim();
+            logger.info("Output từ Node.js script: {}", outputString);
+
+            return outputString;
+
+        } catch (Exception e) {
+            logger.error("Lỗi khi chuyển token: ", e);
+            return "Lỗi khi chuyển token: " + e.getMessage();
+        }
+    }
+
+
+
 
     public String getUsernameFromPublicKey(String publicKey) {
         Optional<SolanaEntity> walletOptional = walletRepository.findByPublicKey(publicKey);
@@ -78,7 +245,7 @@ public class WalletService {
         }
     }
 
-    public String createToken(String senderSecretKeyBase58, int tokenCount) {
+    public TokenCreationResponse createToken(String senderSecretKeyBase58, int tokenCount) {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "node",
@@ -92,22 +259,39 @@ public class WalletService {
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             StringBuilder output = new StringBuilder();
             String line;
+            String tokenAddress = null; // Biến để lưu địa chỉ token
+            String mintToken = null; // Biến để lưu mint token
+
             while ((line = reader.readLine()) != null) {
                 output.append(line).append("\n");
+                // Kiểm tra xem dòng có chứa thông tin mint token không
+                if (line.contains("Mint token đã tạo: ")) {
+                    mintToken = line.substring(line.indexOf(": ") + 2).trim(); // Lấy mint token
+                }
+                // Kiểm tra xem dòng có chứa thông tin địa chỉ tài khoản token không
+                if (line.contains("Tạo tài khoản token: ")) {
+                    tokenAddress = line.substring(line.indexOf(": ") + 2).trim(); // Lấy địa chỉ token
+                }
             }
             process.waitFor();
 
             String outputString = output.toString().trim();
             logger.info("Output from Node.js script: {}", outputString);
 
-            String mintToken = extractMintToken(outputString);
-            return mintToken;
+            if (mintToken == null || tokenAddress == null) {
+                throw new Exception("Không thể lấy mint token hoặc địa chỉ token từ đầu ra.");
+            }
+
+            // Trả về đối tượng chứa mintToken và tokenAddress
+            return new TokenCreationResponse(mintToken, tokenAddress);
 
         } catch (Exception e) {
             logger.error("Error creating token: ", e);
-            return "Error creating token: " + e.getMessage();
+            return new TokenCreationResponse(null, "Error creating token: " + e.getMessage());
         }
     }
+
+
 
     private String extractMintToken(String output) {
         String[] lines = output.split("\n");
@@ -146,11 +330,13 @@ public class WalletService {
                 for (int i = 0; i < result.length(); i++) {
                     JSONObject accountInfo = result.getJSONObject(i).getJSONObject("account").getJSONObject("data").getJSONObject("parsed").getJSONObject("info");
                     String mint = accountInfo.getString("mint");
+                    String tokenAddress = result.getJSONObject(i).getString("pubkey"); // Lấy địa chỉ token (token address)
                     JSONObject tokenAmount = accountInfo.getJSONObject("tokenAmount");
                     long amount = tokenAmount.getLong("amount");
 
                     JSONObject tokenDetails = new JSONObject();
                     tokenDetails.put("mint", mint);
+                    tokenDetails.put("tokenAddress", tokenAddress); // Thêm token address
                     tokenDetails.put("amount", amount);
 
                     tokensArray.put(tokenDetails);
@@ -168,6 +354,7 @@ public class WalletService {
             return "{\"error\": \"Error getting token accounts: " + e.getMessage() + "\"}";
         }
     }
+
 
     public String createWallet(UUID userId) {
         try {
@@ -276,7 +463,7 @@ public class WalletService {
     public String getTransactionHistory(String publicKey) {
         try {
             String jsonInputString = String.format(
-                    "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"getConfirmedSignaturesForAddress2\", \"params\": [\"%s\", {\"limit\": 10}]}",
+                    "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"getConfirmedSignaturesForAddress2\", \"params\": [\"%s\", {\"limit\": 10   }]}",
                     publicKey
             );
 

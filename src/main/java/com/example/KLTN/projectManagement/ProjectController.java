@@ -41,6 +41,11 @@ public class ProjectController {
         this.userRepository = userRepository;
 
     }
+    @GetMapping("/{projectId}/coordinates")
+    public ResponseEntity<List<CoordinateDTO>> getCoordinates(@PathVariable UUID projectId) {
+        List<CoordinateDTO> coordinates = projectService.getCoordinatesByProjectId(projectId);
+        return ResponseEntity.ok(coordinates);
+    }
     @GetMapping("/project/{projectId}")
     public ResponseEntity<SellerDTO> getSellerByProjectId(@PathVariable UUID projectId) {
         SellerDTO sellerDTO = projectService.getSellerByProjectId(projectId);

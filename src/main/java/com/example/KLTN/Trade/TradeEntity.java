@@ -57,5 +57,8 @@ public class TradeEntity {
     private String standardName;
     @Column(name = "user_id", columnDefinition = "BINARY(16)")
     private UUID userId;
-
+    @Column(name = "token_address")
+    private String tokenAddress;
+    @Column(name = "status")
+    private String status;
 }

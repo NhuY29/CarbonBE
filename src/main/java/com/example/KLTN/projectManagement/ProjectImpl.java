@@ -1,6 +1,7 @@
 package com.example.KLTN.projectManagement;
 
 
+import com.example.KLTN.DTO.UserDTO;
 import com.example.KLTN.Entity.UserEntity;
 import com.example.KLTN.Seller.SellerDTO;
 import com.example.KLTN.Seller.SellerEntity;
@@ -63,6 +64,23 @@ public class ProjectImpl implements ProjectService {
 
         return sellerDTO;
     }
+    @Override
+    public List<CoordinateDTO> getCoordinatesByProjectId(UUID projectId) {
+        ProjectEntity projectEntity = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project ID not found"));
+
+        // Chuyển đổi danh sách tọa độ từ ProjectEntity sang danh sách CoordinateDTO
+        return projectEntity.getCoordinates().stream()
+                .map(coordinate -> new CoordinateDTO(
+                        coordinate.getLat(),
+                        coordinate.getLng(),
+                        coordinate.getRadius(), // Giả sử bạn đã có getter cho trường này
+                        coordinate.getOrder(),  // Giả sử bạn đã có getter cho trường này
+                        coordinate.getType()    // Giả sử bạn đã có getter cho trường này
+                ))
+                .collect(Collectors.toList());
+    }
+
 
     @Override
     public ProjectEntity createProject(ProjectRequest projectRequest, UserEntity user) {
@@ -202,8 +220,19 @@ public class ProjectImpl implements ProjectService {
                 .collect(Collectors.toList());
         dto.setCoordinates(coordinates);
 
+        // Lấy thông tin người sở hữu
+        UserEntity userEntity = projectEntity.getUser();
+        if (userEntity != null) {
+            UserDTO userDTO = new UserDTO();
+            userDTO.setUsername(userEntity.getUsername());
+            userDTO.setFirstname(userEntity.getFirstname());
+            userDTO.setLastname(userEntity.getLastname());
+            dto.setUser(userDTO);
+        }
+
         return dto;
     }
+
     public ProjectDTO getProjectById(UUID projectId) {
         ProjectEntity projectEntity = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project ID not found"));

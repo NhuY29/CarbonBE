@@ -7,4 +7,6 @@ import java.util.UUID;
 public interface TradeService {
     Optional<TradeEntity> getTradeById(UUID tradeId);
     List<TradeDTO> getAllTrades();
+    String getStatusByTradeId(UUID tradeId);
+    void updateTradeStatus(UUID tradeId);
 }

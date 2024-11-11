@@ -1,5 +1,6 @@
 package com.example.KLTN.projectManagement;
 
+import com.example.KLTN.DTO.UserDTO;
 import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,5 +27,5 @@ public class ProjectDTO {
     private String field;
     private List<ImageDTO> images;
     private List<CoordinateDTO> coordinates;
-
+    private UserDTO user;
 }

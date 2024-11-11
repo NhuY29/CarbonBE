@@ -26,6 +26,68 @@ public class WalletController {
         this.userService = userService;
         this.jwtDecoder = jwtDecoder;
     }
+
+    @GetMapping("/transaction-historyAdressToken")
+    public ResponseEntity<String> getTransactionHistory(@RequestParam String tokenAddress) {
+        try {
+            // Call the method to get transaction history for the provided token address
+            String transactionHistory = walletService.getTransactionHistory2(tokenAddress);
+            return ResponseEntity.ok(transactionHistory); // Return the result as JSON
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("{\"error\": \"Lỗi khi lấy lịch sử giao dịch: " + e.getMessage() + "\"}");
+        }
+    }
+    @GetMapping("balance")
+    public String checkTokenBalance(
+            @RequestParam String mintAddress,
+            @RequestParam String tokenAccountAddress) {
+        return walletService.getTokenBalance(mintAddress, tokenAccountAddress);
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<WalletResponse> getWalletByUserId(@PathVariable UUID userId) {
+        SolanaEntity solanaEntity = walletService.getWalletByUserId(userId);
+
+        if (solanaEntity == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        WalletResponse walletResponse = new WalletResponse();
+        walletResponse.setPublicKey(solanaEntity.getPublicKey());
+        walletResponse.setSecretKey(solanaEntity.getSecretKey());
+
+        return ResponseEntity.ok(walletResponse);
+    }
+    @PostMapping("/transferToken")
+    public ResponseEntity<Map<String, Object>> transferToken(
+            @RequestParam String senderSecretKeyBase58,
+            @RequestParam String toAddressBase58,
+            @RequestParam String mintAddressBase58,
+            @RequestParam int amount,
+            @RequestParam double solAmount,
+            @RequestParam String receiverSecretKeyBase58) { // Đánh dấu là bắt buộc
+
+        String result = walletService.transferToken(senderSecretKeyBase58, toAddressBase58, mintAddressBase58, amount, solAmount, receiverSecretKeyBase58);
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (result.contains("Giao dịch đã được xác nhận với chữ ký:")) {
+            response.put("success", true);
+            String signature = result.split(": ")[1];
+            response.put("message", "Giao dịch đã được thực hiện thành công với chữ ký: " + signature);
+        } else {
+            if (result.contains("Giao dịch chuyển token đã được xác nhận với chữ ký:") ||
+                    result.contains("Giao dịch chuyển SOL đã được xác nhận với chữ ký:")) {
+                response.put("success", true);
+                response.put("message", "Giao dịch đã được thực hiện thành công " );
+            } else {
+                response.put("success", false);
+                response.put("message", "Giao dịch thất bại: " + result);
+            }
+        }
+
+        return ResponseEntity.ok(response);
+    }
     @GetMapping("/username/{publicKey}")
     public ResponseEntity<String> getUsername(@PathVariable String publicKey) {
         String username = walletService.getUsernameFromPublicKey(publicKey);
@@ -38,9 +100,23 @@ public class WalletController {
 
 
     @PostMapping("/createToken")
-    public String createToken(@RequestParam String senderSecretKeyBase58,
-                              @RequestParam int tokenCount) {
-        return walletService.createToken(senderSecretKeyBase58, tokenCount);
+    public ResponseEntity<Map<String, String>> createToken(@RequestParam String senderSecretKeyBase58,
+                                                           @RequestParam int tokenCount) {
+        try {
+            // Gọi phương thức createToken từ walletService
+            TokenCreationResponse tokenResponse = walletService.createToken(senderSecretKeyBase58, tokenCount);
+
+            // Tạo phản hồi JSON
+            Map<String, String> response = new HashMap<>();
+            response.put("mintToken", tokenResponse.getMintToken());
+            response.put("tokenAddress", tokenResponse.getTokenAddress());
+
+            return ResponseEntity.ok(response); // Trả về phản hồi 200 OK với nội dung JSON
+        } catch (Exception e) {
+            // Xử lý lỗi và trả về thông báo lỗi
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", "Lỗi khi tạo token: " + e.getMessage()));
+        }
     }
 
 
@@ -67,12 +143,15 @@ public class WalletController {
             Jwt decodedJwt = jwtDecoder.decode(jwtToken);
             String username = decodedJwt.getSubject();
             UUID userId = userService.getUserIdByUsername(username);
+
+            // Tìm ví của người dùng
             Optional<SolanaEntity> walletOptional = walletService.findWalletByUserId(userId);
 
             if (walletOptional.isPresent()) {
                 String publicKey = walletOptional.get().getPublicKey();
                 String walletInfoJson = walletService.getWalletInfo(publicKey);
 
+                // Trả về thông tin ví dưới dạng JSON
                 return ResponseEntity.ok(walletInfoJson);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -84,6 +163,7 @@ public class WalletController {
                     .body("Error getting wallet info: " + e.getMessage());
         }
     }
+
     @GetMapping("/secretKey")
     public ResponseEntity<String> getWalletSecretByOwner(@RequestHeader("Authorization") String token) {
         try {

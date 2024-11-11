@@ -1,4 +1,4 @@
-package com.example.KLTN.Trade;
+package com.example.KLTN.Cart;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,12 +7,12 @@ import lombok.Setter;
 
 import java.util.List;
 import java.util.UUID;
-
-@Getter
 @Setter
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
-public class TradeDTO {
+@NoArgsConstructor
+public class    CartDTO {
+    private UUID cartId;
     private String tradeId;
     private String projectId;
     private String projectName;
@@ -38,5 +38,5 @@ public class TradeDTO {
     private List<String> imageUrls;
     private UUID userId;
     private String tokenAddress;
-    private String status;
+    private int amount;
 }

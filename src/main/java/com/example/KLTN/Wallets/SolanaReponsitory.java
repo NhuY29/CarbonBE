@@ -20,4 +20,5 @@ public interface SolanaReponsitory extends JpaRepository<SolanaEntity, UUID> {
 
     Optional<SolanaEntity> findByUser_UserId(UUID userId);
 
+
 }
