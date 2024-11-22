@@ -27,7 +27,6 @@ public class MeasurementDetailsEntity {
     @Column(name = "data")
     private float data;
 
-    // ManyToOne relationship with MeasurementDataEntity
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "measurement_data_id", nullable = false)
     private MeasurementDataEntity measurementData;

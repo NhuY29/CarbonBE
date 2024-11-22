@@ -69,14 +69,13 @@ public class ProjectImpl implements ProjectService {
         ProjectEntity projectEntity = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project ID not found"));
 
-        // Chuyển đổi danh sách tọa độ từ ProjectEntity sang danh sách CoordinateDTO
         return projectEntity.getCoordinates().stream()
                 .map(coordinate -> new CoordinateDTO(
                         coordinate.getLat(),
                         coordinate.getLng(),
-                        coordinate.getRadius(), // Giả sử bạn đã có getter cho trường này
-                        coordinate.getOrder(),  // Giả sử bạn đã có getter cho trường này
-                        coordinate.getType()    // Giả sử bạn đã có getter cho trường này
+                        coordinate.getRadius(),
+                        coordinate.getOrder(),
+                        coordinate.getType()
                 ))
                 .collect(Collectors.toList());
     }
@@ -219,8 +218,6 @@ public class ProjectImpl implements ProjectService {
                 .map(coordinate -> new CoordinateDTO(coordinate.getLat(), coordinate.getLng()))
                 .collect(Collectors.toList());
         dto.setCoordinates(coordinates);
-
-        // Lấy thông tin người sở hữu
         UserEntity userEntity = projectEntity.getUser();
         if (userEntity != null) {
             UserDTO userDTO = new UserDTO();

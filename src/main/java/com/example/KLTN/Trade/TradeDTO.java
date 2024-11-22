@@ -24,13 +24,10 @@ public class TradeDTO {
 
     private String price;
 
-    // Mã token mint (nếu có)
     private String mintToken;
 
-    // ID của tiêu chuẩn
     private String standardId;
 
-    // ID của loại giao dịch
     private String typeId;
     private String projectDescription;
     private String typeName;
@@ -39,4 +36,8 @@ public class TradeDTO {
     private UUID userId;
     private String tokenAddress;
     private String status;
+    private  String approvalStatus;
+    private  String purchasedFrom;
+    private String purchasePrice;
+
 }

@@ -35,7 +35,6 @@ public class ImageImpl implements ImageService {
             return ResponseEntity.notFound().build();
         }
 
-        // Resize the image
         byte[] resizedImageData = resizeImage(imageData, width, height);
         if (resizedImageData.length == 0) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

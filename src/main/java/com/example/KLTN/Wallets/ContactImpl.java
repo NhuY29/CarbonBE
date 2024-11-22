@@ -19,7 +19,6 @@ public class ContactImpl implements ContactService {
     @Autowired
     private SolanaReponsitory walletRepository;
     public ResponseEntity<?> saveContact(String secretKey, ContactEntity contact) {
-        // Tìm wallet dựa trên secretKey thay vì publicKey
         SolanaEntity wallet = walletRepository.findBySecretKey(secretKey)
                 .orElseThrow(() -> new EntityNotFoundException("Wallet not found"));
 

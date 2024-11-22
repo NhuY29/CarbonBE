@@ -1,7 +1,6 @@
 package com.example.KLTN.Cart;
 
-import com.example.KLTN.Trade.TradeDTO;
-import com.example.KLTN.Trade.TradeEntity;
+
 
 import java.util.List;
 import java.util.UUID;

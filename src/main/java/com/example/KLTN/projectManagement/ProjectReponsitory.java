@@ -15,4 +15,5 @@ public interface ProjectReponsitory extends JpaRepository<ProjectEntity, UUID> {
     @Query("SELECT p.user.userId FROM ProjectEntity p WHERE p.projectId = :projectId")
     Optional<UUID> findUserIdByProjectId(@Param("projectId") UUID projectId);
 
+    List<ProjectEntity> findAllByProjectIdIn(List<UUID> projectIds);
 }

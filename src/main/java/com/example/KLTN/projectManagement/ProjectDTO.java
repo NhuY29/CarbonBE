@@ -28,4 +28,9 @@ public class ProjectDTO {
     private List<ImageDTO> images;
     private List<CoordinateDTO> coordinates;
     private UserDTO user;
+
+    public ProjectDTO(UUID projectId, String projectName) {
+            this.projectId = projectId;
+            this.projectName = projectName;
+    }
 }

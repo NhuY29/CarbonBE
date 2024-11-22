@@ -70,7 +70,7 @@ public class UserImpl implements UserService {
             } else if (userDTO.getRoles().contains("ROLE_BUYER")) {
                 if (buyerDTO != null) {
                     buyerDTO.setUserId(userEntity.getUserId());
-                    buyerDTO.setBuyerId(UUID.randomUUID()); // Tự động tạo buyerId
+                    buyerDTO.setBuyerId(UUID.randomUUID());
                     buyerService.createBuyer(buyerDTO);
                 } else {
                     throw new IllegalArgumentException("Thông tin BuyerDTO không được cung cấp cho ROLE_BUYER");

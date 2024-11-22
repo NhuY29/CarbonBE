@@ -24,13 +24,9 @@ public class    CartDTO {
 
     private String price;
 
-    // Mã token mint (nếu có)
     private String mintToken;
 
-    // ID của tiêu chuẩn
     private String standardId;
-
-    // ID của loại giao dịch
     private String typeId;
     private String projectDescription;
     private String typeName;

@@ -1,9 +1,13 @@
 package com.example.KLTN.Withdrawal;
 
+import com.example.KLTN.Enum.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 
 @RestController
@@ -11,7 +15,26 @@ import org.springframework.web.bind.annotation.*;
 public class WithdrawalController {
     @Autowired
     private WithdrawalService withdrawalService;
-
+    @GetMapping("/all")
+    public List<WithdrawalDTO> getAllWithdrawals() {
+        return withdrawalService.getAllWithdrawals();
+    }
+    @GetMapping("/user/{userId}")
+    public List<WithdrawalDTO> getWithdrawalsByUserId(@PathVariable UUID userId) {
+        return withdrawalService.getWithdrawalsByUserId(userId);
+    }
+    @PutMapping("/update-status/{withdrawalId}")
+    public ResponseEntity<WithdrawalResponse> updateWithdrawalStatus(
+            @PathVariable UUID withdrawalId,
+            @RequestParam Status newStatus) {
+        try {
+            WithdrawalResponse response = withdrawalService.updateWithdrawalStatus(withdrawalId, newStatus);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            WithdrawalResponse errorResponse = new WithdrawalResponse("error", "Lỗi hệ thống: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
     @PostMapping("/request")
     public ResponseEntity<WithdrawalResponse> requestWithdrawal(
             @RequestHeader("Authorization") String token,
@@ -20,20 +43,14 @@ public class WithdrawalController {
             @RequestParam String bankAccountNumber,
             @RequestParam String accountHolderName) {
         try {
-            // Xử lý yêu cầu rút tiền từ dịch vụ
             WithdrawalResponse response = withdrawalService.processWithdrawal(
                     token, amount, bankName, bankAccountNumber, accountHolderName);
-
-            // Kiểm tra xem phản hồi có chứa trạng thái thất bại hay không
             if ("failure".equals(response.getStatus())) {
-                // Nếu thất bại, trả về HTTP 400 (BAD_REQUEST)
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             } else {
-                // Nếu thành công, trả về HTTP 200 (OK)
                 return ResponseEntity.ok(response);
             }
         } catch (Exception e) {
-            // Xử lý lỗi hệ thống
             WithdrawalResponse errorResponse = new WithdrawalResponse("error", "Lỗi hệ thống: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }

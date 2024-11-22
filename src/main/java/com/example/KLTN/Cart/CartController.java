@@ -1,8 +1,6 @@
 package com.example.KLTN.Cart;
 
 import com.example.KLTN.DTO.ResponseDTO;
-import com.example.KLTN.Trade.TradeDTO;
-import com.example.KLTN.Trade.TradeEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,9 +32,7 @@ public class CartController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<CartDTO>> getAllCartItemsByUserId(@PathVariable UUID userId) {
-        // Gọi dịch vụ để lấy danh sách CartDTO
         List<CartDTO> cartItems = cartService.getAllCartItemsByUserId(userId);
-        // Trả về danh sách CartDTO với mã phản hồi OK
         return ResponseEntity.ok(cartItems);
     }
 

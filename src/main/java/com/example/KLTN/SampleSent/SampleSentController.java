@@ -1,9 +1,9 @@
 package com.example.KLTN.SampleSent;
 
+import com.example.KLTN.Enum.Status;
 import com.example.KLTN.Reponsitory.UserRepository;
 import com.example.KLTN.Seller.SellerDTO;
-import com.example.KLTN.Trade.TradeEntity;
-import com.example.KLTN.Trade.TradeRepository;
+import com.example.KLTN.Trade.*;
 import com.example.KLTN.Wallets.SolanaReponsitory;
 import com.example.KLTN.Wallets.TokenCreationResponse;
 import com.example.KLTN.Wallets.WalletService;
@@ -43,32 +43,25 @@ public class SampleSentController {
     private TradeRepository tradeRepository;
     @Autowired
     private CommonCategoryService commonCategoryService;
+    @Autowired
+    private Trade2Repository trade2Repository;
+
     @PostMapping("/TokenSupply")
-    public ResponseEntity<Map<String, Object>> getSecretKey(@RequestParam("projectId") UUID projectId,
-                                                            @RequestParam("quantity") Float quantity,
-                                                            @RequestParam("price") String price) {
+    public ResponseEntity<Map<String, Object>> getSecretKey(
+            @RequestParam("projectId") UUID projectId,
+            @RequestParam("quantity") Float quantity) {
         try {
-            // Lấy userId từ projectId
             UUID userId = projectRepository.findUserIdByProjectId(projectId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project không tồn tại hoặc không có userId liên quan"));
 
-            // Lấy secretKey từ userId
             String secretKey = walletRepository.findSecretKeyByUserId(userId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Secret key không tồn tại cho user này"));
-
-            // Tạo mintToken và tokenAddress từ secretKey và quantity
             TokenCreationResponse tokenResponse = walletService.createToken(secretKey, quantity.intValue());
             String mintToken = tokenResponse.getMintToken();
             String tokenAddress = tokenResponse.getTokenAddress();
-
-            // Lấy thông tin dự án từ projectId
             ProjectEntity project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project không tồn tại"));
-
-            // Lấy thông tin người bán từ projectId
             SellerDTO sellerDTO = projectService.getSellerByProjectId(projectId);
-
-            // Tạo mới một TradeEntity
             TradeEntity tradeEntity = new TradeEntity();
             tradeEntity.setProject(project);
             tradeEntity.setQuantity(quantity.intValue());
@@ -76,20 +69,17 @@ public class SampleSentController {
             tradeEntity.setField(project.getField());
             tradeEntity.setCompanyName(sellerDTO.getCompanyName());
             tradeEntity.setMintToken(mintToken);
-            tradeEntity.setPrice(price);
             tradeEntity.setUserId(userId);
-            tradeEntity.setTokenAddress(tokenAddress); // Lưu địa chỉ token vào TradeEntity
+            tradeEntity.setTokenAddress(tokenAddress);
             tradeEntity.setStatus(String.valueOf(true));
+            tradeEntity.setApprovalStatus(Status.valueOf(Status.CHOXULY.toString()));
+            tradeEntity.setPurchasePrice("0");
 
-            // Lấy name cho typeId và standardId
             if (project.getType() != null) {
                 UUID typeId = UUID.fromString(project.getType());
                 CommonCategoryDTO typeCategory = commonCategoryService.getCategoryById(typeId);
                 tradeEntity.setTypeId(typeId);
                 tradeEntity.setTypeName(typeCategory.getName());
-            } else {
-                tradeEntity.setTypeId(null);
-                tradeEntity.setTypeName(null);
             }
 
             if (project.getStandard() != null) {
@@ -97,20 +87,39 @@ public class SampleSentController {
                 CommonCategoryDTO standardCategory = commonCategoryService.getCategoryById(standardId);
                 tradeEntity.setStandardId(standardId);
                 tradeEntity.setStandardName(standardCategory.getName());
-            } else {
-                tradeEntity.setStandardId(null);
-                tradeEntity.setStandardName(null);
             }
+
             tradeEntity.setProjectDescription(project.getProjectDescription());
-
-            // Lưu giao dịch vào database
             tradeRepository.save(tradeEntity);
+            Trade2Entity trade2Entity = new Trade2Entity();
+            trade2Entity.setProject(project);
+            trade2Entity.setQuantity(quantity.intValue());
+            trade2Entity.setProjectName(project.getProjectName());
+            trade2Entity.setField(project.getField());
+            trade2Entity.setMintToken(mintToken);
+            trade2Entity.setUserId(userId);
 
-            // Tạo phản hồi trả về
+            if (project.getType() != null) {
+                UUID typeId = UUID.fromString(project.getType());
+                CommonCategoryDTO typeCategory = commonCategoryService.getCategoryById(typeId);
+                trade2Entity.setTypeId(typeId);
+                trade2Entity.setTypeName(typeCategory.getName());
+            }
+
+            if (project.getStandard() != null) {
+                UUID standardId = UUID.fromString(project.getStandard());
+                CommonCategoryDTO standardCategory = commonCategoryService.getCategoryById(standardId);
+                trade2Entity.setStandardId(standardId);
+                trade2Entity.setStandardName(standardCategory.getName());
+            }
+
+            trade2Entity.setProjectDescription(project.getProjectDescription());
+            trade2Repository.save(trade2Entity);
+
             Map<String, Object> response = new HashMap<>();
             response.put("secretKey", secretKey);
             response.put("mintToken", mintToken);
-            response.put("tokenAddress", tokenAddress); // Thêm địa chỉ token vào phản hồi
+            response.put("tokenAddress", tokenAddress);
 
             return ResponseEntity.ok(response);
 
@@ -119,6 +128,8 @@ public class SampleSentController {
                     .body(Collections.singletonMap("error", "Lỗi khi lấy secretKey: " + e.getMessage()));
         }
     }
+
+
 
 
     @PostMapping("/upload")

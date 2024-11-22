@@ -111,7 +111,7 @@ public class MeasurementDataImpl implements MeasurementDataService{
             detailsEntity.setWasteSource(details.getWasteSource());
             detailsEntity.setGas(details.getGas());
             detailsEntity.setData(details.getData());
-            detailsEntity.setMeasurementData(existingData); // Liên kết với MeasurementDataEntity
+            detailsEntity.setMeasurementData(existingData);
 
             updatedDetailsList.add(detailsEntity);
         }

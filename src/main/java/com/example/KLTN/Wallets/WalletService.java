@@ -3,6 +3,7 @@ package com.example.KLTN.Wallets;
 import com.example.KLTN.Configuration.WebSocketController;
 import com.example.KLTN.Entity.UserEntity;
 import com.example.KLTN.Reponsitory.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.bitcoinj.core.Base58;
 import org.bitcoinj.core.Transaction;
 import org.json.*;
@@ -55,6 +56,7 @@ public class WalletService {
     public WalletService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
+
 
     public void checkAndNotifyChange(String publicKey) {
         String message = "Số dư hoặc lịch sử giao dịch của bạn đã thay đổi.";
@@ -127,15 +129,33 @@ public class WalletService {
         }
     }
 
+    private boolean isValidBase58(String input) {
+        if (input == null || input.isEmpty()) {
+            return false;
+        }
+        return input.matches("^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$");
+    }
 
-    public String getTokenBalance(String mintAddressBase58, String tokenAccountAddressBase58) {
+    public String getTokenAddress(String publicKey, String mintAddress) {
         try {
+            System.out.println("Received publicKey: " + publicKey);
+            System.out.println("Received mintAddress: " + mintAddress);
+
+            if (!isValidBase58(publicKey)) {
+                return "{\"error\":\"Invalid public key format\"}";
+            }
+            if (!isValidBase58(mintAddress)) {
+                return "{\"error\":\"Invalid mint address format\"}";
+            }
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "node",
-                    "D:\\wallet_solana\\tokenBalance.js",
-                    mintAddressBase58,
-                    tokenAccountAddressBase58
+                    "D:\\wallet_solana\\getTokenAddress.js",
+                    publicKey,
+                    mintAddress
             );
+
+            String command = String.join(" ", processBuilder.command());
+            System.out.println("Executing command: " + command);
 
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
@@ -145,7 +165,49 @@ public class WalletService {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                // Lọc bỏ thông báo không cần thiết
+                if (!line.contains("bigint: Failed to load bindings")) {
+                    output.append(line).append("\n");
+                }
+            }
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                System.out.println("Node.js script exited with code: " + exitCode);
+                return "{\"error\":\"Script Node.js failed with exit code: " + exitCode + "\"}";
+            }
+
+            String outputString = output.toString().trim();
+            System.out.println("Output from Node.js: " + outputString);
+
+            return outputString;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JSONObject jsonResponse = new JSONObject();
+            jsonResponse.put("message", "Lỗi khi gọi script Node.js: " + e.getMessage());
+            return jsonResponse.toString();
+        }
+    }
+
+
+
+    public String getTokenBalance(String mintAddressBase58, String tokenAccountAddressBase58) {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "node",
+                    "D:\\wallet_solana\\tokenBalance.js",
+                    mintAddressBase58,
+                    tokenAccountAddressBase58
+            );
+            String command = String.join(" ", processBuilder.command());
+            System.out.println("Executing command: " + command);
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
                 if (!line.contains("bigint: Failed to load bindings")) {
                     output.append(line).append("\n");
                 }
@@ -153,19 +215,16 @@ public class WalletService {
 
             process.waitFor();
 
-            // Tạo JSON response
             JSONObject jsonResponse = new JSONObject();
-            String balance = "0"; // Khởi tạo số dư mặc định
+            String balance = "0";
 
-            // Phân tích đầu ra để lấy số dư
             String outputString = output.toString().trim();
             if (!outputString.isEmpty()) {
-                // Giả định đầu ra có định dạng như sau: "Số dư token: 50000000000"
                 String[] lines = outputString.split("\n");
                 for (String outputLine : lines) {
                     if (outputLine.startsWith("Số dư token: ")) {
                         balance = outputLine.replace("Số dư token: ", "").trim();
-                        break; // Kết thúc vòng lặp khi đã tìm thấy số dư
+                        break;
                     }
                 }
             }
@@ -182,7 +241,6 @@ public class WalletService {
             return jsonResponse.toString();
         }
     }
-
 
 
     public String transferToken(String senderSecretKeyBase58, String toAddressBase58, String mintAddressBase58, int amount, double solAmount, String receiverSecretKeyBase58) {
@@ -205,9 +263,8 @@ public class WalletService {
             StringBuilder output = new StringBuilder();
             String line;
 
-            // Đọc từng dòng đầu ra và lọc bỏ dòng không mong muốn
             while ((line = reader.readLine()) != null) {
-                if (!line.contains("bigint: Failed to load bindings")) { // Lọc bỏ dòng thông báo bigint
+                if (!line.contains("bigint: Failed to load bindings")) {
                     output.append(line).append("\n");
                 }
             }
@@ -224,8 +281,6 @@ public class WalletService {
             return "Lỗi khi chuyển token: " + e.getMessage();
         }
     }
-
-
 
 
     public String getUsernameFromPublicKey(String publicKey) {
@@ -259,18 +314,17 @@ public class WalletService {
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             StringBuilder output = new StringBuilder();
             String line;
-            String tokenAddress = null; // Biến để lưu địa chỉ token
-            String mintToken = null; // Biến để lưu mint token
+            String tokenAddress = null;
+            String mintToken = null;
 
             while ((line = reader.readLine()) != null) {
                 output.append(line).append("\n");
-                // Kiểm tra xem dòng có chứa thông tin mint token không
+
                 if (line.contains("Mint token đã tạo: ")) {
-                    mintToken = line.substring(line.indexOf(": ") + 2).trim(); // Lấy mint token
+                    mintToken = line.substring(line.indexOf(": ") + 2).trim();
                 }
-                // Kiểm tra xem dòng có chứa thông tin địa chỉ tài khoản token không
                 if (line.contains("Tạo tài khoản token: ")) {
-                    tokenAddress = line.substring(line.indexOf(": ") + 2).trim(); // Lấy địa chỉ token
+                    tokenAddress = line.substring(line.indexOf(": ") + 2).trim();
                 }
             }
             process.waitFor();
@@ -282,7 +336,6 @@ public class WalletService {
                 throw new Exception("Không thể lấy mint token hoặc địa chỉ token từ đầu ra.");
             }
 
-            // Trả về đối tượng chứa mintToken và tokenAddress
             return new TokenCreationResponse(mintToken, tokenAddress);
 
         } catch (Exception e) {
@@ -330,13 +383,13 @@ public class WalletService {
                 for (int i = 0; i < result.length(); i++) {
                     JSONObject accountInfo = result.getJSONObject(i).getJSONObject("account").getJSONObject("data").getJSONObject("parsed").getJSONObject("info");
                     String mint = accountInfo.getString("mint");
-                    String tokenAddress = result.getJSONObject(i).getString("pubkey"); // Lấy địa chỉ token (token address)
+                    String tokenAddress = result.getJSONObject(i).getString("pubkey");
                     JSONObject tokenAmount = accountInfo.getJSONObject("tokenAmount");
                     long amount = tokenAmount.getLong("amount");
 
                     JSONObject tokenDetails = new JSONObject();
                     tokenDetails.put("mint", mint);
-                    tokenDetails.put("tokenAddress", tokenAddress); // Thêm token address
+                    tokenDetails.put("tokenAddress", tokenAddress);
                     tokenDetails.put("amount", amount);
 
                     tokensArray.put(tokenDetails);
@@ -463,7 +516,7 @@ public class WalletService {
     public String getTransactionHistory(String publicKey) {
         try {
             String jsonInputString = String.format(
-                    "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"getConfirmedSignaturesForAddress2\", \"params\": [\"%s\", {\"limit\": 10   }]}",
+                    "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"getConfirmedSignaturesForAddress2\", \"params\": [\"%s\", {\"limit\": 100   }]}",
                     publicKey
             );
 
@@ -564,7 +617,6 @@ public class WalletService {
             String responseBody = response.body();
             System.out.println("Response from Solana API: " + responseBody);
 
-            // Notify balance change
             checkAndNotifyChange(recipientPubkey);
 
             return responseBody;

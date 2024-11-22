@@ -36,13 +36,16 @@ public class WithdrawalEntity {
 
     @Column(nullable = false)
     private String accountHolderName;
-
+    private LocalDateTime approvalTime;
     private LocalDateTime requestTime;
-
+    private LocalDateTime expiryTime;
     @Enumerated(EnumType.STRING)
     private Status status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
+    @Column(name = "transaction_signature", columnDefinition = "TEXT")
+    private String transactionSignature;
+
 }

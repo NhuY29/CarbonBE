@@ -14,17 +14,15 @@ public class CoordinateDTO {
     private double lat;
     private double lng;
 
-    private double radius; // Thêm trường này
-    private int order;     // Thêm trường này
-    private String type;   // Thêm trường này
+    private double radius;
+    private int order;
+    private String type;
 
-    // Constructor cho lat và lng
     public CoordinateDTO(double lat, double lng) {
         this.lat = lat;
         this.lng = lng;
     }
 
-    // Constructor cho tất cả các trường
     public CoordinateDTO(double lat, double lng, double radius, int order, String type) {
         this.lat = lat;
         this.lng = lng;
