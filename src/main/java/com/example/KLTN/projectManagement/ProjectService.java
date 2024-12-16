@@ -16,7 +16,6 @@ public interface ProjectService {
     ProjectEntity createProject(ProjectRequest projectRequest, UserEntity user);
     ProjectDTO getProjectById(UUID projectId);
     void deleteProject(UUID projectId);
-    List<ProjectDTO> getAllProjects();
     String uploadImage(MultipartFile file) throws IOException;
     ResponseEntity<Resource> downloadImagesByProjectId(UUID projectId) throws IOException;
     List<ImageEntity> getImagesByProjectId(UUID projectId);
@@ -31,4 +30,5 @@ public interface ProjectService {
     List<Echart> getProjectStandardData();
     List<CommuneDistrictDTO> getCommuneDistrictProjectCounts() ;
     List<ProjectDTO> getProjectsByUserIdDeny(UUID userId);
+    List<ProjectDTO> getActiveProjects();
 }

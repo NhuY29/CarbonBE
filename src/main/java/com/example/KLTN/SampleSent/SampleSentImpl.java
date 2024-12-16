@@ -2,6 +2,8 @@ package com.example.KLTN.SampleSent;
 
 import com.example.KLTN.Configuration.MailService;
 import com.example.KLTN.Enum.Status;
+import com.example.KLTN.commonCategory.CommonCategoryEntity;
+import com.example.KLTN.commonCategory.CommonCategoryRepository;
 import com.example.KLTN.projectManagement.ProjectEntity;
 import com.example.KLTN.projectManagement.ProjectReponsitory;
 import jakarta.mail.MessagingException;
@@ -23,6 +25,8 @@ public class SampleSentImpl implements SampleSentService{
     private ProjectReponsitory projectRepository;
     @Autowired
     private MailService mailService;
+    @Autowired
+    private CommonCategoryRepository commonCategoryRepository;
 
     @Override
     public void savePdf(UUID projectId, MultipartFile file) {
@@ -138,11 +142,8 @@ public class SampleSentImpl implements SampleSentService{
         }
     @Override
     public List<SampleSentDTO> getAllProjectsWithStatusDaTuChoi() {
-        // Tìm tất cả các SampleSentEntity có trạng thái DATUCHOI
         List<SampleSentEntity> sampleSentEntities = sampleSentRepository.findByStatus(Status.DATUCHOI);
         List<SampleSentDTO> projects = new ArrayList<>();
-
-        // Chuyển đổi danh sách SampleSentEntity thành SampleSentDTO
         for (SampleSentEntity sample : sampleSentEntities) {
             projects.add(new SampleSentDTO(
                     sample.getId(),
@@ -188,16 +189,26 @@ public class SampleSentImpl implements SampleSentService{
                 projectEntity.setProjectStatus("Bị từ chối");
                 projectRepository.save(projectEntity);
 
-                // Lấy thông tin dự án để gửi vào email
-                String recipientEmail = projectEntity.getUser().getUsername(); // Giả sử bạn có email liên hệ trong projectEntity
+                String recipientEmail = projectEntity.getUser().getUsername();
                 String projectName = projectEntity.getProjectName();
-                String projectCode = projectEntity.getProjectCode();  // Nếu cần mã dự án
+                String projectCode = projectEntity.getProjectCode();
+                String projectDescription = projectEntity.getProjectDescription();
+                String projectStartDate = projectEntity.getProjectStartDate();
+                String projectEndDate = projectEntity.getProjectEndDate();
+
+                CommonCategoryEntity typeCategory = commonCategoryRepository.findById(UUID.fromString(projectEntity.getType())).orElse(null);
+                CommonCategoryEntity standardCategory = commonCategoryRepository.findById(UUID.fromString(projectEntity.getStandard())).orElse(null);
+
+                String type = (typeCategory != null) ? typeCategory.getName() : "N/A";
+                String standard = (standardCategory != null) ? standardCategory.getName() : "N/A";
+                String field = projectEntity.getField();
+                String commune = projectEntity.getCommune();
+                String district = projectEntity.getDistrict();
+                String conscious = projectEntity.getConscious();
 
                 try {
-                    // Gửi email thông báo lý do từ chối cùng thông tin dự án
-                    mailService.sendRejectionEmail(recipientEmail, rejectionReason, projectName, projectCode);
+                    mailService.sendRejectionEmail(recipientEmail, rejectionReason, projectName, projectCode, projectDescription, projectStartDate, projectEndDate, type, standard, field, commune, district, conscious);
                 } catch (MessagingException e) {
-                    // Xử lý lỗi khi gửi email
                     throw new RuntimeException("Lỗi khi gửi email thông báo: " + e.getMessage(), e);
                 }
             } else {

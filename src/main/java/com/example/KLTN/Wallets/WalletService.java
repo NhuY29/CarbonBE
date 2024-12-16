@@ -178,7 +178,7 @@ public class WalletService {
     public String getTransactionHistory2(String tokenAddress) {
         try {
             String jsonInputString = String.format(
-                    "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"getConfirmedSignaturesForAddress2\", \"params\": [\"%s\", {\"limit\": 10   }]}",
+                    "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"getConfirmedSignaturesForAddress2\", \"params\": [\"%s\", {\"limit\": 100}]}",
                     tokenAddress
             );
 

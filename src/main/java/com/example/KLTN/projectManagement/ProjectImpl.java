@@ -350,10 +350,17 @@ public class ProjectImpl implements ProjectService {
         projectRepository.deleteById(projectId);
     }
 
-    public List<ProjectDTO> getAllProjects() {
-        List<ProjectEntity> projects = projectRepository.findAll();
-        return projects.stream().map(this::convertToDTO).collect(Collectors.toList());
+    public List<ProjectDTO> getActiveProjects() {
+        // Lấy danh sách dự án có trạng thái "Đang hoạt động"
+        List<ProjectEntity> activeProjects = projectRepository.findByProjectStatus("Đang hoạt động");
+
+        // Chuyển đổi danh sách dự án từ ProjectEntity sang ProjectDTO bằng cách sử dụng convertToDTO()
+        return activeProjects.stream()
+                .map(this::convertToDTO) // Sử dụng phương thức convertToDTO đã định nghĩa
+                .collect(Collectors.toList());
     }
+
+
 
     private ProjectDTO convertToDTO(ProjectEntity projectEntity) {
         ProjectDTO dto = new ProjectDTO();

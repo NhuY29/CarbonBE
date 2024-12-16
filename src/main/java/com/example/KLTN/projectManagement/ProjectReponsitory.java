@@ -23,4 +23,5 @@ public interface ProjectReponsitory extends JpaRepository<ProjectEntity, UUID> {
     List<Object[]> findCommuneDistrictProjectCounts();
 
 
+    List<ProjectEntity> findByProjectStatus(String đangHoạtĐộng);
 }

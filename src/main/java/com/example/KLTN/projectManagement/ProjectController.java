@@ -331,7 +331,8 @@ public class ProjectController {
     }
     @GetMapping("/list")
     public ResponseEntity<List<ProjectDTO>> getAllProjects() {
-        List<ProjectDTO> projects = projectService.getAllProjects();
+        List<ProjectDTO> projects = projectService.getActiveProjects();
         return new ResponseEntity<>(projects, HttpStatus.OK);
     }
+
 }
