@@ -15,4 +15,6 @@ public class SampleSentDTO {
     private UUID id;
     private UUID projectId;
     private LocalDateTime sendDate;
+    private Float quantity;
+    private String reason;
 }

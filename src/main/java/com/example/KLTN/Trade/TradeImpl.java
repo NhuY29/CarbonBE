@@ -259,7 +259,6 @@ public class TradeImpl implements TradeService {
         try {
             ProjectEntity project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new IllegalArgumentException("Project không tồn tại"));
-
             Optional<Trade2Entity> existingTrade2 = trade2Repository.findByMintTokenAndProject_ProjectIdAndUserId(mintToken, projectId, buyerUserId);
 
             TradeEntity tradeEntity = new TradeEntity();
@@ -290,9 +289,12 @@ public class TradeImpl implements TradeService {
 
             tradeEntity.setPurchasedFrom(purchasedFrom);
             tradeEntity.setPurchasePrice(String.valueOf(purchasePrice));
-
-            tradeEntity = tradeRepository.save(tradeEntity);
-            if (!existingTrade2.isPresent()) {
+            if (existingTrade2.isPresent()) {
+                Trade2Entity trade2Entity = existingTrade2.get();
+                trade2Entity.setQuantity(trade2Entity.getQuantity() + quantity);
+                trade2Repository.save(trade2Entity);
+            } else {
+                // Nếu không có giao dịch cũ, tạo mới Trade2Entity
                 Trade2Entity trade2Entity = new Trade2Entity();
                 trade2Entity.setProject(project);
                 trade2Entity.setProjectName(project.getProjectName());
@@ -308,11 +310,14 @@ public class TradeImpl implements TradeService {
                 trade2Entity.setTypeName(typeName);
                 trade2Repository.save(trade2Entity);
             }
+            tradeEntity = tradeRepository.save(tradeEntity);
             return tradeEntity;
+
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi tạo giao dịch: " + e.getMessage(), e);
         }
     }
+
 
 
     @Override

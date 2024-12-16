@@ -22,4 +22,9 @@ public class ProjectRequest {
     private String standard;
     private  String field;
     private List<CoordinateEntity> coordinates;
+    private String commune;
+    private String district;
+    private String conscious;
+    private String city;
+    private String aim;
 }

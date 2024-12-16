@@ -94,6 +94,14 @@ public class UserController {
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
-
+    @GetMapping("/role")
+    public ResponseEntity<String> getRoleFromToken(@RequestHeader("Authorization") String token) {
+        String role = userService.getRoleFromToken(token);
+        if (role != null) {
+            return ResponseEntity.ok(role);
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unable to fetch role");
+        }
+    }
 
 }

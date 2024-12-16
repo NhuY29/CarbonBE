@@ -66,6 +66,115 @@ public class WalletService {
         return walletRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found for userId: " + userId));
     }
+    public String getTransactionsByProjectId(String projectId) {
+        try {
+            // Chạy script Node.js thông qua ProcessBuilder
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "node", "D:\\wallet_solana\\getTransactionsByProjectId.js", projectId
+            );
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            // Đọc kết quả từ Node.js script
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                // Loại bỏ dòng cảnh báo "bigint: Failed to load bindings"
+                if (!line.contains("bigint: Failed to load bindings")) {
+                    output.append(line).append("\n");
+                }
+            }
+            process.waitFor();
+
+            return output.toString();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return "Error occurred while fetching transactions.";
+        }
+    }
+
+    public String burnTokens(String senderSecretKeyBase58, String[] mintAddresses, String[] amounts,
+                             String projectName, String projectId, String eventDescription,
+                             String eventField, String eventReason, String evenContent) {
+        try {
+            StringBuilder args = new StringBuilder();
+            args.append(String.join(",", mintAddresses != null ? mintAddresses : new String[0]));
+            args.append(" ");
+            args.append(String.join(",", amounts != null ? amounts : new String[0]));
+            args.append(" ");
+            args.append(projectName != null ? projectName : "");
+            args.append(" ");
+            args.append(projectId != null ? projectId : "");
+            args.append(" ");
+            args.append(eventDescription != null ? eventDescription : "");
+            args.append(" ");
+            args.append(eventField != null ? eventField : "");
+            args.append(" ");
+            args.append(eventReason != null ? eventReason : "");
+            args.append(" ");
+            args.append(evenContent != null ? evenContent : "");
+            logger.info("Prepared arguments for Node.js script: {}", args.toString());
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "node", "D:\\wallet_solana\\burnToken2.js",
+                    senderSecretKeyBase58,
+                    String.join(",", mintAddresses),
+                    String.join(",", amounts),
+                    projectName != null ? projectName : "",
+                    projectId != null ? projectId : "",
+                    eventDescription != null ? eventDescription : "",
+                    eventField != null ? eventField : "",
+                    eventReason != null ? eventReason : "",
+                    evenContent != null ? evenContent : ""
+            );
+
+            logger.info("Executing Node.js script with command: {}", String.join(" ", processBuilder.command()));
+
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!line.contains("bigint: Failed to load bindings")) {
+                    output.append(line).append("\n");
+                }
+            }
+            process.waitFor();
+
+            String outputString = output.toString().trim();
+            logger.info("Output from Node.js burnToken2 script: {}", outputString);
+
+            JSONObject result = new JSONObject();
+
+            if (outputString.contains("Transaction to log content successful: ")) {
+                String transactionId = outputString.replace("Transaction to log content successful: ", "").split("\n")[0];
+                result.put("transactionId", transactionId);
+                result.put("message", "Transaction to log content successful");
+                result.put("status", "success");
+            } else {
+                String errorMessage = outputString.split("\n")[0];
+                result.put("status", "failure");
+                result.put("message", "Error during token burning");
+                result.put("error", errorMessage);
+            }
+            return result.toString();
+
+        } catch (IOException | InterruptedException e) {
+            logger.error("Error during token burning: ", e);
+
+            JSONObject result = new JSONObject();
+            result.put("message", "Error during token burning");
+            result.put("status", "failure");
+            result.put("error", e.getMessage());
+
+            return result.toString();
+        }
+    }
+
+
     public String getTransactionHistory2(String tokenAddress) {
         try {
             String jsonInputString = String.format(

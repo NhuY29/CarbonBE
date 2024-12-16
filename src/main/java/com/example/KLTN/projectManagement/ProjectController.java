@@ -41,6 +41,39 @@ public class ProjectController {
         this.userRepository = userRepository;
 
     }
+    @GetMapping("/commune-district")
+    public List<CommuneDistrictDTO> getCommuneDistrictProjectCounts() {
+        return projectService.getCommuneDistrictProjectCounts();
+    }
+    @GetMapping("/typeData")
+    public List<Echart> getProjectTypeData() {
+        return projectService.getProjectTypeData();
+    }
+    @GetMapping("/standardData")
+    public List<Echart> getProjectStandardData() {
+        return projectService.getProjectStandardData();
+    }
+    @PutMapping("/updateQuantityBurn/{projectId}")
+    public ResponseEntity<Map<String, Object>> updateQuantityBurn(
+            @PathVariable UUID projectId,
+            @RequestParam Float newQuantityBurn) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            projectService.updateQuantityBurn(projectId, newQuantityBurn);
+
+            response.put("status", "success");
+            response.put("message", "Quantity Burn updated successfully");
+            response.put("updatedQuantityBurn", newQuantityBurn);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Project not found");
+            return ResponseEntity.status(404).body(response);
+        }
+    }
+
     @GetMapping("/{projectId}/coordinates")
     public ResponseEntity<List<CoordinateDTO>> getCoordinates(@PathVariable UUID projectId) {
         List<CoordinateDTO> coordinates = projectService.getCoordinatesByProjectId(projectId);
@@ -79,6 +112,11 @@ public class ProjectController {
             @RequestParam String standard,
             @RequestParam String field,
             @RequestParam String coordinates,
+            @RequestParam String commune,
+            @RequestParam String district,
+            @RequestParam String conscious,
+            @RequestParam String city,
+            @RequestParam String aim,
             @RequestParam("images") List<MultipartFile> imageFiles) throws IOException {
 
         Map<String, Object> response = new HashMap<>();
@@ -110,16 +148,19 @@ public class ProjectController {
         projectRequest.setType(type);
         projectRequest.setStandard(standard);
         projectRequest.setField(field);
+        projectRequest.setCommune(commune);
+        projectRequest.setDistrict(district);
+        projectRequest.setConscious(conscious);
+        projectRequest.setCity(city);
+        projectRequest.setAim(aim);
 
         try {
             List<CoordinateEntity> coordinatesList = objectMapper.readValue(coordinates,
                     objectMapper.getTypeFactory().constructCollectionType(List.class, CoordinateEntity.class));
             projectRequest.setCoordinates(coordinatesList);
 
-
             ProjectEntity project = projectService.createProject(projectRequest, user);
 
-            // Save images
             for (MultipartFile imageFile : imageFiles) {
                 if (!imageFile.isEmpty()) {
                     String imageUrl = projectService.uploadImage(imageFile);
@@ -130,7 +171,6 @@ public class ProjectController {
                     imageRepository.save(image);
                 }
             }
-
 
             response.put("success", true);
             response.put("message", "Dự án đã được tạo thành công");
@@ -161,7 +201,43 @@ public class ProjectController {
         List<ProjectDTO> projects = projectService.getProjectsByUserId(user.getUserId());
         return ResponseEntity.ok(projects);
     }
+    @GetMapping("/projectWithQuantityBurn")
+    public ResponseEntity<List<ProjectDTO>> getProjectsByUserIdWithQuantityBurn(@AuthenticationPrincipal Jwt jwt) {
 
+        String username = jwt.getClaimAsString("sub");
+
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+
+        List<ProjectDTO> projects = projectService.getProjectsByUserIdWithQuantityBurn(user.getUserId());
+        return ResponseEntity.ok(projects);
+    }
+    @GetMapping("/projectDeny")
+    public ResponseEntity<List<ProjectDTO>> getProjectsDeny(@AuthenticationPrincipal Jwt jwt) {
+
+        String username = jwt.getClaimAsString("sub");
+
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+
+        List<ProjectDTO> projects = projectService.getProjectsByUserIdDeny(user.getUserId());
+        return ResponseEntity.ok(projects);
+    }
+    @GetMapping("/projectWithQuantityNull")
+    public ResponseEntity<List<ProjectDTO>> getProjectsByUserIdWithQuantityNull(@AuthenticationPrincipal Jwt jwt) {
+
+        String username = jwt.getClaimAsString("sub");
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        List<ProjectDTO> projects = projectService.getProjectsByUserIdWithQuantityNull(user.getUserId());
+        return ResponseEntity.ok(projects);
+    }
     @PutMapping("/update/{projectId}")
     public ResponseEntity<Map<String, Object>> updateProject(
             @PathVariable UUID projectId,
@@ -175,6 +251,11 @@ public class ProjectController {
             @RequestParam String standard,
             @RequestParam String field,
             @RequestParam String coordinates,
+            @RequestParam String commune,
+            @RequestParam String district,
+            @RequestParam String conscious,
+            @RequestParam String city,
+            @RequestParam String aim,
             @RequestParam(value = "images", required = false) List<MultipartFile> imageFiles) throws IOException {
 
         Map<String, Object> response = new HashMap<>();
@@ -189,6 +270,11 @@ public class ProjectController {
         projectRequest.setType(type);
         projectRequest.setStandard(standard);
         projectRequest.setField(field);
+        projectRequest.setCommune(commune);
+        projectRequest.setDistrict(district);
+        projectRequest.setConscious(conscious);
+        projectRequest.setCity(city);
+        projectRequest.setAim(aim);
 
         try {
             List<CoordinateEntity> coordinatesList = objectMapper.readValue(coordinates,
@@ -222,7 +308,6 @@ public class ProjectController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Có lỗi không mong muốn xảy ra: " + e.getMessage());
         }
     }
-
 
 
 

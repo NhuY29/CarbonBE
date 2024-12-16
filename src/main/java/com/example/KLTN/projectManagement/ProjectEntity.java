@@ -66,4 +66,19 @@ public class ProjectEntity {
     private UserEntity user;
     @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private signatureEntity signature;
+    @Column(name = "quantity_burn")
+    private Float quantityBurn;
+    @Column(name = "quantity_noburn")
+    private Float quantityNoburn;
+    @Column(name = "commune")
+    private String commune;
+    @Column(name = "district")
+    private String district;
+    @Column(name = "conscious")
+    private String conscious;
+    @Column(name = "city")
+    private String city;
+    @Column(name = "aim")
+    private String aim;
+
 }

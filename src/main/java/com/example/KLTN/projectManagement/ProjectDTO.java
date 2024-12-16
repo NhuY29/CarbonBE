@@ -1,7 +1,7 @@
 package com.example.KLTN.projectManagement;
 
 import com.example.KLTN.DTO.UserDTO;
-import jakarta.persistence.Column;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,9 +28,16 @@ public class ProjectDTO {
     private List<ImageDTO> images;
     private List<CoordinateDTO> coordinates;
     private UserDTO user;
+    private Float quantityBurn;
+    private Float quantityNoburn;
+    private String commune;   // Thêm commune
+    private String district;  // Thêm district
+    private String conscious; // Thêm conscious
+    private String city;      // Thêm city
+    private String aim;       // Thêm aim
 
     public ProjectDTO(UUID projectId, String projectName) {
-            this.projectId = projectId;
-            this.projectName = projectName;
+        this.projectId = projectId;
+        this.projectName = projectName;
     }
 }

@@ -1,5 +1,6 @@
 package com.example.KLTN.SampleSent;
 
+import com.example.KLTN.Enum.Status;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,5 +34,9 @@ public class SampleSentEntity {
     private LocalDateTime sendDate;
     @Column(name = "quantity")
     private Float quantity;
-
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private Status status;
+    @Column(name = "reason")
+    private String reason;
 }

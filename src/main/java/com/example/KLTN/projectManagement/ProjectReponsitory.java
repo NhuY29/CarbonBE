@@ -16,4 +16,11 @@ public interface ProjectReponsitory extends JpaRepository<ProjectEntity, UUID> {
     Optional<UUID> findUserIdByProjectId(@Param("projectId") UUID projectId);
 
     List<ProjectEntity> findAllByProjectIdIn(List<UUID> projectIds);
+    @Query("SELECT p.commune, p.district, COUNT(p) " +
+            "FROM ProjectEntity p " +
+            "WHERE p.projectStatus = 'Đang hoạt động' " +
+            "GROUP BY p.commune, p.district")
+    List<Object[]> findCommuneDistrictProjectCounts();
+
+
 }

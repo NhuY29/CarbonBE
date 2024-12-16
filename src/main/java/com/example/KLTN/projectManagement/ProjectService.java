@@ -24,4 +24,11 @@ public interface ProjectService {
      List<ProjectDTO> getProjectsByUserId(UUID userId) ;
     SellerDTO getSellerByProjectId(UUID projectId);
     List<CoordinateDTO> getCoordinatesByProjectId(UUID projectId);
+    List<ProjectDTO> getProjectsByUserIdWithQuantityBurn(UUID userId);
+    List<ProjectDTO> getProjectsByUserIdWithQuantityNull(UUID userId);
+    void updateQuantityBurn(UUID projectId, Float newQuantityBurn);
+    List<Echart> getProjectTypeData() ;
+    List<Echart> getProjectStandardData();
+    List<CommuneDistrictDTO> getCommuneDistrictProjectCounts() ;
+    List<ProjectDTO> getProjectsByUserIdDeny(UUID userId);
 }

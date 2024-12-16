@@ -17,7 +17,7 @@ import java.util.Objects;
 
 @Component
 public class CustomJWTDecoder implements JwtDecoder {
-    private String signingKey = "sCj1CBV+VSn6qlZMQxQ0eSEpFsey7Zqp2gaVmLR/3LgOc0UTappt5pCypZt/PWsa";
+    private final String signingKey = "sCj1CBV+VSn6qlZMQxQ0eSEpFsey7Zqp2gaVmLR/3LgOc0UTappt5pCypZt/PWsa";
     @Autowired
     private AuthenticationService authenticationService;
     private NimbusJwtDecoder nimbusJwtDecoder = null;

@@ -21,9 +21,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -36,6 +34,97 @@ public class ProjectImpl implements ProjectService {
     private ImageRepository imageRepository;
     @Autowired
     private SellerReponsitory sellerRepository;
+    public List<CommuneDistrictDTO> getCommuneDistrictProjectCounts() {
+        List<Object[]> results = projectRepository.findCommuneDistrictProjectCounts();
+
+        return results.stream()
+                .map(result -> {
+                    String commune = (String) result[0];
+                    String district = (String) result[1];
+                    Long count = (Long) result[2];
+                    int projectCount = (count != null && count > 0) ? count.intValue() : 1;
+
+                    return new CommuneDistrictDTO(commune, district, projectCount);
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    public List<Echart> getProjectTypeData() {
+        List<ProjectEntity> projects = projectRepository.findAll().stream()
+                .filter(project -> "Đang hoạt động".equals(project.getProjectStatus()))
+                .collect(Collectors.toList());
+
+        Map<String, Integer> typeCountMap = new HashMap<>();
+        Map<String, Float> typeQuantityBurnSumMap = new HashMap<>();
+        Map<String, Float> typeQuantityNoburnSumMap = new HashMap<>();
+
+        for (ProjectEntity project : projects) {
+            String type = project.getType();
+            typeCountMap.put(type, typeCountMap.getOrDefault(type, 0) + 1);
+            Float quantityBurn = project.getQuantityBurn();
+            if (quantityBurn != null) {
+                typeQuantityBurnSumMap.put(type, typeQuantityBurnSumMap.getOrDefault(type, 0f) + quantityBurn);
+            }
+            Float quantityNoburn = project.getQuantityNoburn();
+            if (quantityNoburn != null) {
+                typeQuantityNoburnSumMap.put(type, typeQuantityNoburnSumMap.getOrDefault(type, 0f) + quantityNoburn);
+            }
+        }
+
+        List<Echart> projectTypeData = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : typeCountMap.entrySet()) {
+            String type = entry.getKey();
+            Integer projectCount = entry.getValue();
+            Float totalQuantityBurn = typeQuantityBurnSumMap.getOrDefault(type, 0f);
+            Float totalQuantityNoburn = typeQuantityNoburnSumMap.getOrDefault(type, 0f);
+            String additionalQuantity = String.format("%.2f", totalQuantityBurn);
+            String emissionReduction = String.format("%.2f", totalQuantityNoburn);
+
+            projectTypeData.add(new Echart(type, projectCount, additionalQuantity, emissionReduction));
+        }
+
+        return projectTypeData;
+    }
+    public List<Echart> getProjectStandardData() {
+        List<ProjectEntity> projects = projectRepository.findAll().stream()
+                .filter(project -> "Đang hoạt động".equals(project.getProjectStatus()))
+                .collect(Collectors.toList());
+
+        Map<String, Integer> standardCountMap = new HashMap<>();
+        Map<String, Float> standardQuantityBurnSumMap = new HashMap<>();
+        Map<String, Float> standardQuantityNoburnSumMap = new HashMap<>();
+
+        for (ProjectEntity project : projects) {
+            String standard = project.getStandard();
+            standardCountMap.put(standard, standardCountMap.getOrDefault(standard, 0) + 1);
+            Float quantityBurn = project.getQuantityBurn();
+            if (quantityBurn != null) {
+                standardQuantityBurnSumMap.put(standard, standardQuantityBurnSumMap.getOrDefault(standard, 0f) + quantityBurn);
+            }
+            Float quantityNoburn = project.getQuantityNoburn();
+            if (quantityNoburn != null) {
+                standardQuantityNoburnSumMap.put(standard, standardQuantityNoburnSumMap.getOrDefault(standard, 0f) + quantityNoburn);
+            }
+        }
+
+        List<Echart> projectStandardData = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : standardCountMap.entrySet()) {
+            String standard = entry.getKey();
+            Integer projectCount = entry.getValue();
+            Float totalQuantityBurn = standardQuantityBurnSumMap.getOrDefault(standard, 0f);
+            Float totalQuantityNoburn = standardQuantityNoburnSumMap.getOrDefault(standard, 0f);
+            String additionalQuantity = String.format("%.2f", totalQuantityBurn);
+            String emissionReduction = String.format("%.2f", totalQuantityNoburn);
+
+            projectStandardData.add(new Echart(standard, projectCount, additionalQuantity, emissionReduction));
+        }
+
+        return projectStandardData;
+    }
+
+
+
     private final String uploadDir = "D:/ThucTapIT5/MyFile/";
     public SellerDTO getSellerByProjectId(UUID projectId) {
 
@@ -97,13 +186,79 @@ public class ProjectImpl implements ProjectService {
         project.setUser(user);
         project.setCoordinates(projectRequest.getCoordinates());
 
+        // Xử lý các trường mới
+        project.setCommune(projectRequest.getCommune());
+        project.setDistrict(projectRequest.getDistrict());
+        project.setConscious(projectRequest.getConscious());
+        project.setCity(projectRequest.getCity());
+        project.setAim(projectRequest.getAim());
+
         return projectRepository.save(project);
     }
+
     @Override
     public List<ProjectDTO> getProjectsByUserId(UUID userId) {
         List<ProjectEntity> projects = projectRepository.findByUser_UserId(userId);
-        return projects.stream().map(this::convertToDTO).collect(Collectors.toList());
+
+        List<ProjectEntity> filteredProjects = projects.stream()
+                .filter(project -> "Không hoạt động".equals(project.getProjectStatus()))
+                .collect(Collectors.toList());
+
+        return filteredProjects.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
+    @Override
+    public List<ProjectDTO> getProjectsByUserIdDeny(UUID userId) {
+        List<ProjectEntity> projects = projectRepository.findByUser_UserId(userId);
+
+        List<ProjectEntity> filteredProjects = projects.stream()
+                .filter(project -> "Bị từ chối".equals(project.getProjectStatus()))
+                .collect(Collectors.toList());
+
+        return filteredProjects.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectDTO> getProjectsByUserIdWithQuantityBurn(UUID userId) {
+        List<ProjectEntity> projects = projectRepository.findByUser_UserId(userId);
+
+        List<ProjectEntity> filteredProjects = projects.stream()
+                .filter(project -> "Đang hoạt động".equals(project.getProjectStatus()) && project.getQuantityBurn() != null)
+                .collect(Collectors.toList());
+
+        return filteredProjects.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+    public void updateQuantityBurn(UUID projectId, Float newQuantityBurn) {
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        // Tính toán lại quantityBurn, nếu quantityBurn hiện tại là null thì gán giá trị 0
+        Float updatedQuantityBurn = (project.getQuantityBurn() != null ? project.getQuantityBurn() : 0) + newQuantityBurn;
+
+        // Kiểm tra nếu updatedQuantityBurn > 0 thì gán về 0
+        if (updatedQuantityBurn > 0) {
+            updatedQuantityBurn = 0f;
+        }
+
+        // Cập nhật lại quantityBurn của dự án
+        project.setQuantityBurn(updatedQuantityBurn);
+        projectRepository.save(project);
+    }
+
+
+
+    @Override
+    public List<ProjectDTO> getProjectsByUserIdWithQuantityNull(UUID userId) {
+        List<ProjectEntity> projects = projectRepository.findByUser_UserId(userId);
+
+        // Lọc các dự án có quantityNoburn != null và đang hoạt động
+        List<ProjectEntity> filteredProjects = projects.stream()
+                .filter(project -> "Đang hoạt động".equals(project.getProjectStatus()) && project.getQuantityNoburn() != null)
+                .collect(Collectors.toList());
+
+        return filteredProjects.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+
 
     @Override
     public List<ImageEntity> getImagesByProjectId(UUID projectId) {
@@ -178,6 +333,11 @@ public class ProjectImpl implements ProjectService {
         project.setStandard(projectRequest.getStandard());
         project.setCoordinates(projectRequest.getCoordinates());
         project.setField(projectRequest.getField());
+        project.setCommune(projectRequest.getCommune());
+        project.setDistrict(projectRequest.getDistrict());
+        project.setConscious(projectRequest.getConscious());
+        project.setCity(projectRequest.getCity());
+        project.setAim(projectRequest.getAim());
         return projectRepository.save(project);
     }
 
@@ -195,7 +355,6 @@ public class ProjectImpl implements ProjectService {
         return projects.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-
     private ProjectDTO convertToDTO(ProjectEntity projectEntity) {
         ProjectDTO dto = new ProjectDTO();
         dto.setProjectId(projectEntity.getProjectId());
@@ -208,27 +367,45 @@ public class ProjectImpl implements ProjectService {
         dto.setType(projectEntity.getType());
         dto.setStandard(projectEntity.getStandard());
         dto.setField(projectEntity.getField());
+        dto.setQuantityBurn(projectEntity.getQuantityBurn());
+        dto.setQuantityNoburn(projectEntity.getQuantityNoburn());
 
+        // Thêm các trường mới từ ProjectEntity
+        dto.setCommune(projectEntity.getCommune());
+        dto.setDistrict(projectEntity.getDistrict());
+        dto.setConscious(projectEntity.getConscious());
+        dto.setCity(projectEntity.getCity());
+        dto.setAim(projectEntity.getAim());
+
+        // Chuyển đổi danh sách hình ảnh
         List<ImageDTO> images = projectEntity.getImages().stream()
                 .map(image -> new ImageDTO(image.getImageId(), image.getUrl()))
                 .collect(Collectors.toList());
         dto.setImages(images);
 
+        // Chuyển đổi danh sách tọa độ
         List<CoordinateDTO> coordinates = projectEntity.getCoordinates().stream()
                 .map(coordinate -> new CoordinateDTO(coordinate.getLat(), coordinate.getLng()))
                 .collect(Collectors.toList());
         dto.setCoordinates(coordinates);
+
+        // Chuyển đổi đối tượng UserEntity thành UserDTO
         UserEntity userEntity = projectEntity.getUser();
         if (userEntity != null) {
             UserDTO userDTO = new UserDTO();
+            userDTO.setUserId(userEntity.getUserId());
             userDTO.setUsername(userEntity.getUsername());
             userDTO.setFirstname(userEntity.getFirstname());
             userDTO.setLastname(userEntity.getLastname());
+            userDTO.setRoles(userEntity.getRoles());
+            userDTO.setStatus(userEntity.isStatus());
+            userDTO.setDelete(userEntity.isDelete());
             dto.setUser(userDTO);
         }
 
         return dto;
     }
+
 
     public ProjectDTO getProjectById(UUID projectId) {
         ProjectEntity projectEntity = projectRepository.findById(projectId)

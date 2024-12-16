@@ -1,5 +1,6 @@
 package com.example.KLTN.SampleSent;
 
+import com.example.KLTN.Enum.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +22,6 @@ public interface SampleSentRepository extends JpaRepository<SampleSentEntity, UU
 
     List<SampleSentEntity> findByProjectIdAndId(UUID projectId, UUID id);
 
+
+    List<SampleSentEntity> findByStatus(Status status);
 }

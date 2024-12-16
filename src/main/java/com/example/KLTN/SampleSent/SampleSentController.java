@@ -45,52 +45,62 @@ public class SampleSentController {
     private CommonCategoryService commonCategoryService;
     @Autowired
     private Trade2Repository trade2Repository;
+    @PutMapping("/updateStatus")
+    public ResponseEntity<Map<String, Object>> updateStatusToDaTuChoi(
+            @RequestParam UUID projectId,
+            @RequestParam String rejectionReason) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            sampleSentService.updateStatusToDaTuChoi(projectId, rejectionReason);
+            response.put("success", true);
+            response.put("message", "Trạng thái đã được cập nhật thành DATUCHOI");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
 
     @PostMapping("/TokenSupply")
     public ResponseEntity<Map<String, Object>> getSecretKey(
             @RequestParam("projectId") UUID projectId,
             @RequestParam("quantity") Float quantity) {
         try {
+            if (quantity < 0) {
+                System.out.println("Số lượng không hợp lệ: " + quantity);
+
+                ProjectEntity project = projectRepository.findById(projectId)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project không tồn tại"));
+
+                project.setQuantityBurn(quantity);
+                project.setProjectStatus("Đang hoạt động");
+                projectRepository.save(project);
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Collections.singletonMap("error", "Số lượng phải là số dương và quantityBurn đã được cập nhật"));
+            }
+
             UUID userId = projectRepository.findUserIdByProjectId(projectId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project không tồn tại hoặc không có userId liên quan"));
 
             String secretKey = walletRepository.findSecretKeyByUserId(userId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Secret key không tồn tại cho user này"));
+
             TokenCreationResponse tokenResponse = walletService.createToken(secretKey, quantity.intValue());
             String mintToken = tokenResponse.getMintToken();
             String tokenAddress = tokenResponse.getTokenAddress();
+
             ProjectEntity project = projectRepository.findById(projectId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project không tồn tại"));
+
+            project.setProjectStatus("Đang hoạt động");
+            project.setQuantityNoburn(quantity);
+            projectRepository.save(project);
+
             SellerDTO sellerDTO = projectService.getSellerByProjectId(projectId);
-            TradeEntity tradeEntity = new TradeEntity();
-            tradeEntity.setProject(project);
-            tradeEntity.setQuantity(quantity.intValue());
-            tradeEntity.setProjectName(project.getProjectName());
-            tradeEntity.setField(project.getField());
-            tradeEntity.setCompanyName(sellerDTO.getCompanyName());
-            tradeEntity.setMintToken(mintToken);
-            tradeEntity.setUserId(userId);
-            tradeEntity.setTokenAddress(tokenAddress);
-            tradeEntity.setStatus(String.valueOf(true));
-            tradeEntity.setApprovalStatus(Status.valueOf(Status.CHOXULY.toString()));
-            tradeEntity.setPurchasePrice("0");
 
-            if (project.getType() != null) {
-                UUID typeId = UUID.fromString(project.getType());
-                CommonCategoryDTO typeCategory = commonCategoryService.getCategoryById(typeId);
-                tradeEntity.setTypeId(typeId);
-                tradeEntity.setTypeName(typeCategory.getName());
-            }
-
-            if (project.getStandard() != null) {
-                UUID standardId = UUID.fromString(project.getStandard());
-                CommonCategoryDTO standardCategory = commonCategoryService.getCategoryById(standardId);
-                tradeEntity.setStandardId(standardId);
-                tradeEntity.setStandardName(standardCategory.getName());
-            }
-
-            tradeEntity.setProjectDescription(project.getProjectDescription());
-            tradeRepository.save(tradeEntity);
             Trade2Entity trade2Entity = new Trade2Entity();
             trade2Entity.setProject(project);
             trade2Entity.setQuantity(quantity.intValue());
@@ -128,8 +138,6 @@ public class SampleSentController {
                     .body(Collections.singletonMap("error", "Lỗi khi lấy secretKey: " + e.getMessage()));
         }
     }
-
-
 
 
     @PostMapping("/upload")
@@ -187,6 +195,16 @@ public class SampleSentController {
                     .body(Collections.singletonMap("error", "Lỗi khi lưu PDF nhận lại: " + e.getMessage()));
         }
     }
+    @GetMapping("/projectsWithStatusDaTuChoi")
+    public ResponseEntity<List<SampleSentDTO>> getAllProjectsWithStatusDaTuChoi() {
+        try {
+            List<SampleSentDTO> projects = sampleSentService.getAllProjectsWithStatusDaTuChoi();
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.emptyList());
+        }
+    }
+
 
     @GetMapping("/getPdfReceived")
     public ResponseEntity<byte[]> getPdfReceived(@RequestParam("projectId") String projectId,

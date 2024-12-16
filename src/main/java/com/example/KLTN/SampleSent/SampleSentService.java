@@ -18,4 +18,6 @@ public interface SampleSentService {
     List<SampleSentDTO> getAllProjectsWithPdfFileReceived();
     List<SampleSentDTO> getProjectsWithSendDateToday();
     void savePdfReceived(UUID projectId, UUID id, MultipartFile file, int quantity);
+    void updateStatusToDaTuChoi(UUID projectId, String rejectionReason);
+    List<SampleSentDTO> getAllProjectsWithStatusDaTuChoi();
 }

@@ -11,6 +11,7 @@ import com.example.KLTN.Seller.SellerDTO;
 import com.example.KLTN.Seller.SellerService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -273,5 +274,26 @@ public class UserImpl implements UserService {
     public SellerDTO getSellerByUserId(UUID userId) {
         Optional<SellerDTO> sellerOptional = sellerService.findByUserId(userId);
         return sellerOptional.orElse(null);
+    }
+    public String getRoleFromToken(String token) {
+        try {
+            // Lấy UserId từ token
+            UUID userId = getUserIdByToken(token);
+            if (userId == null) {
+                return null; // Nếu không lấy được UserId thì trả về null
+            }
+
+            // Truy vấn thông tin người dùng từ database bằng UserId
+            Optional<UserEntity> userOptional = userRepository.findById(userId);
+            if (userOptional.isPresent()) {
+                UserEntity user = userOptional.get();
+                return user.getRoles(); // Trả về role của người dùng
+            }
+
+            return null; // Nếu không tìm thấy người dùng thì trả về null
+        } catch (Exception e) {
+            // Log hoặc xử lý lỗi ở đây nếu cần
+            return null;
+        }
     }
 }

@@ -3,6 +3,8 @@ package com.example.KLTN.projectManagement;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "coordinates")
 @Getter
@@ -11,11 +13,11 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class CoordinateEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Long id;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "BINARY(16)")
+    private UUID id;
     @Column(name = "lat")
     private double lat;
 
@@ -30,4 +32,6 @@ public class CoordinateEntity {
 
     @Column(name = "type")
     private String type;
+    @Column(name = "project_id")
+    private UUID projectId;
 }

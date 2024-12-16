@@ -25,6 +25,28 @@ public class WalletController {
         this.userService = userService;
         this.jwtDecoder = jwtDecoder;
     }
+    @GetMapping("/byProjectId")
+    public ResponseEntity<String> getTransactionsByProjectId(@RequestParam String projectId) {
+        String transactions = walletService.getTransactionsByProjectId(projectId);
+        return ResponseEntity.ok(transactions);
+    }
+
+    @PostMapping("/burn")
+    public String burnTokens(
+            @RequestParam String senderSecretKeyBase58,
+            @RequestParam String[] mintAddresses,
+            @RequestParam String[] amounts,
+            @RequestParam(required = false) String projectName,
+            @RequestParam(required = false) String projectId,
+            @RequestParam(required = false) String eventDescription,
+            @RequestParam(required = false) String eventField,
+            @RequestParam(required = false) String eventReason,
+            @RequestParam(required = false) String evenContent) {
+
+        return walletService.burnTokens(senderSecretKeyBase58, mintAddresses, amounts,
+                projectName, projectId, eventDescription,
+                eventField, eventReason, evenContent);
+    }
     @GetMapping("/address")
     public ResponseEntity<Map<String, String>> getTokenAddress(
             @RequestParam String publicKey,
