@@ -51,6 +51,8 @@ public class WalletService {
 
     @Autowired
     private WebSocketController webSocketController;
+    @Autowired
+    private SolanaReponsitory solanaRepository;
 
     private final RestTemplate restTemplate;
     public WalletService(RestTemplate restTemplate) {
@@ -619,6 +621,31 @@ public class WalletService {
         } catch (Exception e) {
             e.printStackTrace();
             return "{\"error\": \"Error getting wallet info: " + e.getMessage() + "\"}";
+        }
+    }
+    public String deleteTransaction(String publicKey, String signature) {
+        try {
+            // Lấy danh sách giao dịch từ Solana RPC
+            String transactionHistory = getTransactionHistory(publicKey);
+            JSONObject jsonResponse = new JSONObject(transactionHistory);
+            JSONArray transactionsArray = jsonResponse.getJSONArray("transactions");
+
+            // Lọc các giao dịch không phải là giao dịch cần xóa
+            JSONArray updatedTransactionsArray = new JSONArray();
+            for (int i = 0; i < transactionsArray.length(); i++) {
+                JSONObject transaction = transactionsArray.getJSONObject(i);
+                if (!transaction.getString("signature").equals(signature)) {
+                    updatedTransactionsArray.put(transaction);
+                }
+            }
+
+            // Cập nhật danh sách giao dịch sau khi xóa
+            jsonResponse.put("transactions", updatedTransactionsArray);
+
+            return jsonResponse.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "{\"error\": \"Error deleting transaction: " + e.getMessage() + "\"}";
         }
     }
 

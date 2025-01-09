@@ -276,6 +276,34 @@ public class WalletController {
                     .body("Error getting wallet info: " + e.getMessage());
         }
     }
+    @DeleteMapping("/transactions/{signature}")
+    public ResponseEntity<?> deleteTransaction(
+            @RequestHeader("Authorization") String token,
+            @PathVariable("signature") String signature) {
+        try {
+            String jwtToken = token.replace("Bearer ", "");
+            Jwt decodedJwt = jwtDecoder.decode(jwtToken);
+            String username = decodedJwt.getSubject();
+
+            UUID userId = userService.getUserIdByUsername(username);
+
+            Optional<SolanaEntity> walletOptional = walletService.findWalletByUserId(userId);
+
+            if (walletOptional.isPresent()) {
+                String publicKey = walletOptional.get().getPublicKey();
+                String updatedTransactions = walletService.deleteTransaction(publicKey, signature);
+                return ResponseEntity.ok(updatedTransactions);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Public key not found for user: " + username);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting transaction: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/airdrop")
     public ResponseEntity<String> airdrop(@RequestParam String recipientPubkey, @RequestParam double amount) {
         try {

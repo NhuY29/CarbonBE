@@ -140,6 +140,28 @@ public class UserImpl implements UserService {
 
         return new PageImpl<>(userDTOs, pageable, userEntities.getTotalElements());
     }
+    public UserDTO getUserById(UUID userId) {
+        Optional<UserEntity> userEntityOptional = userRepository.findById(userId);
+
+        if (userEntityOptional.isPresent()) {
+            UserEntity userEntity = userEntityOptional.get();
+
+            // Chuyển đổi UserEntity sang UserDTO
+            UserDTO userDTO = new UserDTO(
+                    userEntity.getUserId(),
+                    userEntity.getUsername(),
+                    userEntity.getPassword(),
+                    userEntity.getFirstname(),
+                    userEntity.getLastname(),
+                    userEntity.getRoles(),
+                    userEntity.isStatus(),
+                    userEntity.isDelete()
+            );
+            return userDTO;
+        } else {
+            return null; // Trả về null nếu không tìm thấy người dùng
+        }
+    }
 
 
     public ResponseDTO updateUserStatus(UUID userId, boolean status) {

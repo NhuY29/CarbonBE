@@ -9,10 +9,8 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Echart {
-    private String name;
-    private Integer projectCount;
-    private String additionalQuantity;
-    private String emissionReduction;
-    private Integer rejectedCount;
+public class ConsciousDTO {
+    private String district;
+    private String conscious;
+    private int projectCount;
 }

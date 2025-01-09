@@ -7,11 +7,8 @@ import com.example.KLTN.Seller.SellerDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,18 +38,28 @@ public class ProjectController {
         this.userRepository = userRepository;
 
     }
+    @GetMapping("/conscious")
+    public List<ConsciousDTO> getConsciousCounts() {
+        return projectService.getConsciousCounts();
+    }
+    @GetMapping("/conscious/{conscious}")
+    public List<ConsciousDTO> getConsciousProjects(@PathVariable String conscious) {
+        return projectService.getConsciousProjects(conscious);
+    }
     @GetMapping("/commune-district")
     public List<CommuneDistrictDTO> getCommuneDistrictProjectCounts() {
         return projectService.getCommuneDistrictProjectCounts();
     }
     @GetMapping("/typeData")
-    public List<Echart> getProjectTypeData() {
-        return projectService.getProjectTypeData();
+    public List<Echart> getProjectTypeData(@RequestParam(required = false) String conscious) {
+        return projectService.getProjectTypeData(conscious);
     }
+
     @GetMapping("/standardData")
-    public List<Echart> getProjectStandardData() {
-        return projectService.getProjectStandardData();
+    public List<Echart> getProjectStandardData(@RequestParam(required = false) String conscious) {
+        return projectService.getProjectStandardData(conscious);
     }
+
     @PutMapping("/updateQuantityBurn/{projectId}")
     public ResponseEntity<Map<String, Object>> updateQuantityBurn(
             @PathVariable UUID projectId,

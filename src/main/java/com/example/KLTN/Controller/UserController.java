@@ -24,6 +24,16 @@ public class UserController {
     public ResponseDTO createUser(@RequestBody RegisterRequest registrationDTO) {
         return userService.createUser(registrationDTO.getUserDTO(), registrationDTO.getBuyerDTO(), registrationDTO.getSellerDTO());
     }
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable UUID userId) {
+        UserDTO userDTO = userService.getUserById(userId);
+
+        if (userDTO != null) {
+            return ResponseEntity.ok(userDTO);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
 
     @GetMapping("/getAll")
     public List<UserDTO> getAllUsers() {

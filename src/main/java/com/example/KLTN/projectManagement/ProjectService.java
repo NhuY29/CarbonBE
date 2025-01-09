@@ -26,9 +26,13 @@ public interface ProjectService {
     List<ProjectDTO> getProjectsByUserIdWithQuantityBurn(UUID userId);
     List<ProjectDTO> getProjectsByUserIdWithQuantityNull(UUID userId);
     void updateQuantityBurn(UUID projectId, Float newQuantityBurn);
-    List<Echart> getProjectTypeData() ;
-    List<Echart> getProjectStandardData();
+//    List<Echart> getProjectTypeData() ;
+    //List<Echart> getProjectStandardData();
     List<CommuneDistrictDTO> getCommuneDistrictProjectCounts() ;
     List<ProjectDTO> getProjectsByUserIdDeny(UUID userId);
     List<ProjectDTO> getActiveProjects();
+    List<ConsciousDTO> getConsciousCounts();
+    List<ConsciousDTO> getConsciousProjects(String conscious);
+    List<Echart> getProjectTypeData(String conscious);
+    List<Echart> getProjectStandardData(String conscious);
 }

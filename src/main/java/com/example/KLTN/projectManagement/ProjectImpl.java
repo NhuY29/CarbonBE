@@ -34,6 +34,38 @@ public class ProjectImpl implements ProjectService {
     private ImageRepository imageRepository;
     @Autowired
     private SellerReponsitory sellerRepository;
+    public List<ConsciousDTO> getConsciousCounts() {
+        List<Object[]> results = projectRepository.findConsciousCounts();
+
+        return results.stream()
+                .map(result -> {
+                    String district = (String) result[0]; // Giá trị district
+                    String conscious = (String) result[1]; // Giá trị conscious
+                    Long count = (Long) result[2]; // Số lượng dự án
+                    int projectCount = (count != null && count > 0) ? count.intValue() : 0;
+
+                    return new ConsciousDTO(district, conscious, projectCount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<ConsciousDTO> getConsciousProjects(String conscious) {
+        // Truy vấn các dự án từ repository, đã lọc theo trạng thái
+        List<Object[]> results = projectRepository.findConsciousProjects(conscious);
+
+        return results.stream()
+                .map(result -> {
+                    String district = (String) result[0]; // Giá trị district
+                    String consciousResult = (String) result[1]; // Giá trị conscious
+                    Long count = (Long) result[2]; // Số lượng dự án
+                    int projectCount = (count != null && count > 0) ? count.intValue() : 0;
+
+                    return new ConsciousDTO(district, consciousResult, projectCount);
+                })
+                .collect(Collectors.toList());
+    }
+
+
     public List<CommuneDistrictDTO> getCommuneDistrictProjectCounts() {
         List<Object[]> results = projectRepository.findCommuneDistrictProjectCounts();
 
@@ -50,80 +82,122 @@ public class ProjectImpl implements ProjectService {
     }
 
 
-    public List<Echart> getProjectTypeData() {
+    public List<Echart> getProjectTypeData(String conscious) {
+        // Lọc các dự án có trạng thái khác "Không hoạt động"
         List<ProjectEntity> projects = projectRepository.findAll().stream()
-                .filter(project -> "Đang hoạt động".equals(project.getProjectStatus()))
+                .filter(project -> !"Không hoạt động".equals(project.getProjectStatus()))  // Lọc các dự án có trạng thái không phải "Không hoạt động"
+                .filter(project -> conscious.equals(project.getConscious()))  // Lọc theo giá trị conscious
                 .collect(Collectors.toList());
 
+        // Tạo các Map để lưu trữ thông tin số lượng và tổng số lượng của từng loại dự án
         Map<String, Integer> typeCountMap = new HashMap<>();
+        Map<String, Integer> typeRejectedCountMap = new HashMap<>();  // Map để lưu số lượng dự án bị từ chối
         Map<String, Float> typeQuantityBurnSumMap = new HashMap<>();
         Map<String, Float> typeQuantityNoburnSumMap = new HashMap<>();
 
+        // Duyệt qua các dự án để tính toán số lượng và tổng số lượng "burn" và "noburn"
         for (ProjectEntity project : projects) {
             String type = project.getType();
+
+            // Cập nhật số lượng dự án theo loại
             typeCountMap.put(type, typeCountMap.getOrDefault(type, 0) + 1);
+
+            // Kiểm tra xem dự án có bị từ chối không, nếu có thì cập nhật số lượng bị từ chối
+            if ("Bị từ chối".equals(project.getProjectStatus())) {
+                typeRejectedCountMap.put(type, typeRejectedCountMap.getOrDefault(type, 0) + 1);
+            }
+
+            // Cộng tổng số lượng quantityBurn theo loại
             Float quantityBurn = project.getQuantityBurn();
             if (quantityBurn != null) {
                 typeQuantityBurnSumMap.put(type, typeQuantityBurnSumMap.getOrDefault(type, 0f) + quantityBurn);
             }
+
+            // Cộng tổng số lượng quantityNoburn theo loại
             Float quantityNoburn = project.getQuantityNoburn();
             if (quantityNoburn != null) {
                 typeQuantityNoburnSumMap.put(type, typeQuantityNoburnSumMap.getOrDefault(type, 0f) + quantityNoburn);
             }
         }
 
+        // Tạo danh sách Echart để trả về dữ liệu cho mỗi loại dự án
         List<Echart> projectTypeData = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : typeCountMap.entrySet()) {
             String type = entry.getKey();
             Integer projectCount = entry.getValue();
+            Integer rejectedCount = typeRejectedCountMap.getOrDefault(type, 0);  // Số lượng dự án bị từ chối
             Float totalQuantityBurn = typeQuantityBurnSumMap.getOrDefault(type, 0f);
             Float totalQuantityNoburn = typeQuantityNoburnSumMap.getOrDefault(type, 0f);
+
+            // Định dạng số lượng thành chuỗi với 2 chữ số thập phân
             String additionalQuantity = String.format("%.2f", totalQuantityBurn);
             String emissionReduction = String.format("%.2f", totalQuantityNoburn);
 
-            projectTypeData.add(new Echart(type, projectCount, additionalQuantity, emissionReduction));
+            // Thêm thông tin vào danh sách Echart
+            projectTypeData.add(new Echart(type, projectCount, additionalQuantity, emissionReduction, rejectedCount));
         }
 
         return projectTypeData;
     }
-    public List<Echart> getProjectStandardData() {
+
+
+    public List<Echart> getProjectStandardData(String conscious) {
+        // Lọc các dự án có trạng thái không phải "Không hoạt động" và có conscious trùng khớp
         List<ProjectEntity> projects = projectRepository.findAll().stream()
-                .filter(project -> "Đang hoạt động".equals(project.getProjectStatus()))
+                .filter(project -> !"Không hoạt động".equals(project.getProjectStatus()))  // Lọc các dự án có trạng thái không phải "Không hoạt động"
+                .filter(project -> conscious.equals(project.getConscious()))  // Lọc theo giá trị conscious
                 .collect(Collectors.toList());
 
+        // Tạo các Map để lưu trữ thông tin số lượng và tổng số lượng của từng tiêu chuẩn dự án
         Map<String, Integer> standardCountMap = new HashMap<>();
+        Map<String, Integer> standardRejectedCountMap = new HashMap<>();  // Map để lưu số lượng dự án bị từ chối
         Map<String, Float> standardQuantityBurnSumMap = new HashMap<>();
         Map<String, Float> standardQuantityNoburnSumMap = new HashMap<>();
 
+        // Duyệt qua các dự án để tính toán số lượng và tổng số lượng "burn" và "noburn"
         for (ProjectEntity project : projects) {
             String standard = project.getStandard();
+
+            // Cập nhật số lượng dự án theo tiêu chuẩn
             standardCountMap.put(standard, standardCountMap.getOrDefault(standard, 0) + 1);
+
+            // Kiểm tra xem dự án có bị từ chối không, nếu có thì cập nhật số lượng bị từ chối
+            if ("Bị từ chối".equals(project.getProjectStatus())) {
+                standardRejectedCountMap.put(standard, standardRejectedCountMap.getOrDefault(standard, 0) + 1);
+            }
+
+            // Cộng tổng số lượng quantityBurn theo tiêu chuẩn
             Float quantityBurn = project.getQuantityBurn();
             if (quantityBurn != null) {
                 standardQuantityBurnSumMap.put(standard, standardQuantityBurnSumMap.getOrDefault(standard, 0f) + quantityBurn);
             }
+
+            // Cộng tổng số lượng quantityNoburn theo tiêu chuẩn
             Float quantityNoburn = project.getQuantityNoburn();
             if (quantityNoburn != null) {
                 standardQuantityNoburnSumMap.put(standard, standardQuantityNoburnSumMap.getOrDefault(standard, 0f) + quantityNoburn);
             }
         }
 
+        // Tạo danh sách Echart để trả về dữ liệu cho mỗi tiêu chuẩn dự án
         List<Echart> projectStandardData = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : standardCountMap.entrySet()) {
             String standard = entry.getKey();
             Integer projectCount = entry.getValue();
+            Integer rejectedCount = standardRejectedCountMap.getOrDefault(standard, 0);  // Số lượng dự án bị từ chối
             Float totalQuantityBurn = standardQuantityBurnSumMap.getOrDefault(standard, 0f);
             Float totalQuantityNoburn = standardQuantityNoburnSumMap.getOrDefault(standard, 0f);
+
+            // Định dạng số lượng thành chuỗi với 2 chữ số thập phân
             String additionalQuantity = String.format("%.2f", totalQuantityBurn);
             String emissionReduction = String.format("%.2f", totalQuantityNoburn);
 
-            projectStandardData.add(new Echart(standard, projectCount, additionalQuantity, emissionReduction));
+            // Thêm thông tin vào danh sách Echart
+            projectStandardData.add(new Echart(standard, projectCount, additionalQuantity, emissionReduction, rejectedCount));
         }
 
         return projectStandardData;
     }
-
-
 
     private final String uploadDir = "D:/ThucTapIT5/MyFile/";
     public SellerDTO getSellerByProjectId(UUID projectId) {
@@ -377,26 +451,22 @@ public class ProjectImpl implements ProjectService {
         dto.setQuantityBurn(projectEntity.getQuantityBurn());
         dto.setQuantityNoburn(projectEntity.getQuantityNoburn());
 
-        // Thêm các trường mới từ ProjectEntity
         dto.setCommune(projectEntity.getCommune());
         dto.setDistrict(projectEntity.getDistrict());
         dto.setConscious(projectEntity.getConscious());
         dto.setCity(projectEntity.getCity());
         dto.setAim(projectEntity.getAim());
 
-        // Chuyển đổi danh sách hình ảnh
         List<ImageDTO> images = projectEntity.getImages().stream()
                 .map(image -> new ImageDTO(image.getImageId(), image.getUrl()))
                 .collect(Collectors.toList());
         dto.setImages(images);
 
-        // Chuyển đổi danh sách tọa độ
         List<CoordinateDTO> coordinates = projectEntity.getCoordinates().stream()
                 .map(coordinate -> new CoordinateDTO(coordinate.getLat(), coordinate.getLng()))
                 .collect(Collectors.toList());
         dto.setCoordinates(coordinates);
 
-        // Chuyển đổi đối tượng UserEntity thành UserDTO
         UserEntity userEntity = projectEntity.getUser();
         if (userEntity != null) {
             UserDTO userDTO = new UserDTO();

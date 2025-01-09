@@ -27,4 +27,5 @@ public interface UserService {
     UUID getUserIdByToken(String token);
     SellerDTO getSellerByUserId(UUID userId);
     String getRoleFromToken(String token);
+    UserDTO getUserById(UUID userId );
 }

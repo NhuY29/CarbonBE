@@ -24,4 +24,10 @@ public interface ProjectReponsitory extends JpaRepository<ProjectEntity, UUID> {
 
 
     List<ProjectEntity> findByProjectStatus(String đangHoạtĐộng);
+    @Query("SELECT p.district, p.conscious, COUNT(p) FROM ProjectEntity p WHERE p.projectStatus != 'Không hoạt động' GROUP BY p.district, p.conscious")
+    List<Object[]> findConsciousCounts();
+
+    @Query("SELECT p.district, p.conscious, COUNT(p) FROM ProjectEntity p WHERE p.conscious = :conscious AND p.projectStatus != 'Không hoạt động' GROUP BY p.district, p.conscious")
+    List<Object[]> findConsciousProjects(@Param("conscious") String conscious);
+
 }
